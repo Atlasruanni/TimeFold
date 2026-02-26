@@ -8,30 +8,1859 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body style="margin: 0; background: #050507; overflow: hidden;">
-  <div id="root"></div>
+<body style="margin: 0; background: #050507; overflow: hidden; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+  <div id="root" style="width: 100%; height: 100%;"></div>
 
   <script type="text/babel">
-    // 1. Tell the browser where to find React hooks
-    const { useState, useEffect, useRef, useCallback } = React;
+    const { useState, useEffect, useRef, useCallback } = window.React;
 
-    /* ========================================================= */
-    /* PASTE ALL YOUR TIMEFOLD.JSX CODE RIGHT HERE!              */
-    /* ========================================================= */
-    
-    // IMPORTANT: Make sure you delete the very first line of your pasted code that says:
-    // import { useState, useEffect, useRef, useCallback } from "react";
-    
-    // IMPORTANT: Make sure you change your final function line from:
-    // export default function TimeFoldFull() {
-    // to:
-    // function TimeFoldFull() {
+/* ═══════════════════════════════════════════════════════
+   GLOBAL STYLES
+═══════════════════════════════════════════════════════ */
+const G = `
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  ::-webkit-scrollbar{display:none;}
+  *{scrollbar-width:none;-ms-overflow-style:none;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,92,40,.5)}50%{box-shadow:0 0 0 8px rgba(255,92,40,0)}}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+  @keyframes recordPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+  @keyframes checkPop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+  @keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes shimmer{0%{opacity:.4}50%{opacity:.8}100%{opacity:.4}}
+  .btn{transition:all .18s ease;cursor:pointer;}
+  .btn:hover{filter:brightness(1.12);transform:translateY(-1px);}
+  .btn:active{transform:scale(.97);filter:brightness(.95);}
+  .card{transition:all .2s ease;cursor:pointer;}
+  .card:hover{transform:translateY(-2px);}
+  .row{transition:background .15s ease;cursor:pointer;border-radius:12px;}
+  .row:hover{background:rgba(255,255,255,.04)!important;}
+  .row:active{background:rgba(255,255,255,.08)!important;}
+`;
 
-    /* ========================================================= */
-    /* END OF YOUR PASTED CODE                                   */
-    /* ========================================================= */
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════ */
+const C = {
+  bg: "#080a0d", bg1: "#0d1014", bg2: "#13161c", bg3: "#1a1e26",
+  border: "rgba(255,255,255,.07)", borderLit: "rgba(255,92,40,.35)",
+  accent: "#ff5c28", accentDim: "rgba(255,92,40,.15)",
+  text: "#f0f2f5", muted: "#9ca3af", dim: "#4b5563",
+  green: "#22c55e", red: "#ef4444", blue: "#3b82f6",
+  fontSans: "'JetBrains Mono', monospace", fontSerif: "'Crimson Pro', serif",
+};
+const s = (o) => Object.assign({}, o);
 
-    // 2. Render the app to the screen
+/* ═══════════════════════════════════════════════════════
+   SHARED PRIMITIVES
+═══════════════════════════════════════════════════════ */
+function Toast({ msg, onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2500); return () => clearTimeout(t); }, []);
+  return (
+    <div style={{ position:"absolute",bottom:76,left:18,right:18,zIndex:999,background:C.bg2,border:`1px solid ${C.borderLit}`,borderRadius:12,padding:"11px 14px",display:"flex",gap:10,alignItems:"center",animation:"toastIn .25s ease",boxShadow:"0 12px 36px rgba(0,0,0,.65)" }}>
+      <div style={{ width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0,animation:"breathe 1.4s infinite" }} />
+      <span style={{ fontFamily:C.fontSans,fontSize:10,color:C.muted,letterSpacing:".3px",lineHeight:1.5 }}>{msg}</span>
+    </div>
+  );
+}
+
+function Sheet({ title, body, actions, onClose }) {
+  return (
+    <div style={{ position:"absolute",inset:0,zIndex:200,background:"rgba(5,5,5,.88)",backdropFilter:"blur(14px)",display:"flex",flexDirection:"column",justifyContent:"flex-end",animation:"fadeIn .2s ease" }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.bg2,borderRadius:"22px 22px 0 0",border:`1px solid ${C.border}`,padding:"26px 22px 36px",animation:"slideUp .28s ease" }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14 }}>
+          <h3 style={{ fontFamily:C.fontSerif,fontSize:22,color:C.text }}>{title}</h3>
+          <button onClick={onClose} className="btn" style={{ background:"rgba(255,255,255,.07)",border:"none",color:C.muted,borderRadius:"50%",width:28,height:28,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+        </div>
+        {body && <p style={{ fontFamily:C.fontSans,fontSize:11,color:C.muted,lineHeight:1.85,marginBottom:actions?16:0 }}>{body}</p>}
+        {actions && <div style={{ display:"flex",flexDirection:"column",gap:8 }}>{actions.map(a=><button key={a.label} className="btn" onClick={()=>{a.fn();onClose();}} style={{ padding:"13px",borderRadius:12,border:`1px solid ${a.primary?C.borderLit:C.border}`,background:a.primary?C.accentDim:"transparent",color:a.primary?C.accent:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>{a.label}</button>)}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ on, onChange, size=44 }) {
+  return (
+    <div onClick={onChange} className="btn" style={{ width:size,height:size*.545,borderRadius:999,flexShrink:0,background:on?C.accent:C.bg3,boxShadow:on?`0 0 12px rgba(255,92,40,.45)`:"none",position:"relative",transition:"background .25s,box-shadow .25s" }}>
+      <div style={{ position:"absolute",top:size*.09,width:size*.36,height:size*.36,borderRadius:"50%",background:"#fff",left:on?size*.545:size*.09,transition:"left .25s cubic-bezier(.34,1.56,.64,1)",boxShadow:"0 1px 4px rgba(0,0,0,.4)" }} />
+    </div>
+  );
+}
+
+function Chip({ label, active, onClick, color }) {
+  const ac = color || C.accent;
+  return (
+    <button onClick={onClick} className="btn" style={{ padding:"7px 14px",borderRadius:999,border:`1px solid ${active?ac:C.border}`,background:active?`rgba(${hexToRgb(ac)},.15)`:"transparent",color:active?ac:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:".5px",textTransform:"uppercase",flexShrink:0 }}>{label}</button>
+  );
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function ProgressDots({ total, current }) {
+  return (
+    <div style={{ display:"flex",gap:5,justifyContent:"center",paddingTop:8 }}>
+      {Array.from({length:total}).map((_,i)=>(
+        <div key={i} style={{ width:i===current?20:6,height:4,borderRadius:999,background:i===current?C.accent:C.bg3,transition:"all .3s ease" }} />
+      ))}
+    </div>
+  );
+}
+
+function SectionHeader({ label, sub }) {
+  return (
+    <div style={{ marginBottom:20 }}>
+      <h2 style={{ fontFamily:C.fontSerif,fontSize:28,color:C.text,lineHeight:1.2,marginBottom:6 }}>{label}</h2>
+      {sub && <p style={{ fontFamily:C.fontSans,fontSize:10,color:C.muted,letterSpacing:"1px",textTransform:"uppercase" }}>{sub}</p>}
+    </div>
+  );
+}
+
+function PrimaryBtn({ label, onClick, done, doneLabel, loading, disabled }) {
+  return (
+    <button className="btn" onClick={onClick} disabled={disabled} style={{ width:"100%",padding:15,borderRadius:12,border:"none",background:done?C.green:disabled?"#1a1e26":C.accent,color:done||disabled?"#fff":"#000",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",transition:"all .3s",boxShadow:done?`0 0 18px rgba(34,197,94,.35)`:disabled?"none":`0 0 18px rgba(255,92,40,.3)`,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:disabled?.5:1 }}>
+      {loading && <div style={{ width:12,height:12,borderRadius:"50%",border:`2px solid #000`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }} />}
+      {done&&!loading && <span style={{ animation:"checkPop .3s ease" }}>✓</span>}
+      {done ? (doneLabel||"Done") : label}
+    </button>
+  );
+}
+
+function SecondaryBtn({ label, onClick }) {
+  return <button className="btn" onClick={onClick} style={{ width:"100%",padding:14,borderRadius:12,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>{label}</button>;
+}
+
+function Input({ placeholder, value, onChange, type="text", onKeyDown }) {
+  return <input type={type} value={value} onChange={onChange} onKeyDown={onKeyDown} placeholder={placeholder} style={{ width:"100%",background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",color:C.text,fontFamily:C.fontSans,fontSize:12,outline:"none" }} />;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SVG ICON LIBRARY
+═══════════════════════════════════════════════════════ */
+const Ico = {
+  lock:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="6" width="10" height="7" rx="1.5" stroke="#ff5c28" strokeWidth="1.5"/><path d="M4 6V4.5a3 3 0 016 0V6" stroke="#ff5c28" strokeWidth="1.5" strokeLinecap="round"/><circle cx="7" cy="9.5" r="1.1" fill="#ff5c28"/></svg>,
+  copy:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="4" y="1" width="8" height="10" rx="1.5" stroke="#ff5c28" strokeWidth="1.5"/><path d="M2 4v8a1 1 0 001 1h7" stroke="#ff5c28" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  people: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="4.5" r="2" stroke="#ff5c28" strokeWidth="1.5"/><path d="M1 12c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="#ff5c28" strokeWidth="1.5" strokeLinecap="round"/><circle cx="10.5" cy="4.5" r="1.5" stroke="#ff5c28" strokeWidth="1.3"/><path d="M11.5 10.5c.69.31 1.5 1 1.5 1.5" stroke="#ff5c28" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  camera: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.4"/><circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M5.5 4l1-2h3l1 2" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
+  mic:    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="1" width="6" height="9" rx="3" stroke="currentColor" strokeWidth="1.4"/><path d="M2 8c0 3.31 2.69 6 6 6s6-2.69 6-6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><line x1="8" y1="14" x2="8" y2="16" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  folder: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 4.5A1.5 1.5 0 012.5 3h3.09l1.41 2H13.5A1.5 1.5 0 0115 6.5v6A1.5 1.5 0 0113.5 14h-11A1.5 1.5 0 011 12.5v-8z" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  wave:   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M1 9Q4 5 7 9Q10 13 13 9Q16 5 19 9" stroke="#ff5c28" strokeWidth="1.8" strokeLinecap="round" fill="none"/></svg>,
+  search: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="#6b7280" strokeWidth="1.5"/><path d="M9.5 9.5l2.5 2.5" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  plus:   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg>,
+  check:  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  chevR:  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3l3 3-3 3" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  chevD:  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  star:   <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1l1.18 2.4 2.65.38-1.92 1.87.45 2.64L5 7.01 2.64 8.29l.45-2.64L1.17 3.78l2.65-.38L5 1z" fill="#ff5c28"/></svg>,
+  shield: <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4v4.5c0 3.6 2.6 7 6 7.5C11.4 15.5 14 12.1 14 8.5V4L8 1.5z" stroke="#ff5c28" strokeWidth="1.4" fill="rgba(255,92,40,.1)"/><path d="M5.5 8l2 2 3-3.5" stroke="#ff5c28" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  eye:    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" strokeWidth="1.3"/><circle cx="7" cy="7" r="2" fill="currentColor"/></svg>,
+  pin:    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.79 1 3 2.79 3 5c0 3.5 4 8 4 8s4-4.5 4-8c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.3"/><circle cx="7" cy="5" r="1.5" fill="currentColor"/></svg>,
+  music:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 11V3l7-1.5v8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><circle cx="4" cy="11" r="1.5" stroke="currentColor" strokeWidth="1.3"/><circle cx="11" cy="9.5" r="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>,
+  vr:     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="14" height="7" rx="3" stroke="#ff5c28" strokeWidth="1.4"/><circle cx="5.5" cy="8.5" r="1.5" fill="#ff5c28"/><circle cx="10.5" cy="8.5" r="1.5" fill="#ff5c28"/><path d="M7 8.5h2" stroke="#ff5c28" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  play:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 2l9 5-9 5V2z" fill="currentColor"/></svg>,
+  pause:  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2.5" y="2" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="8" y="2" width="3.5" height="10" rx="1" fill="currentColor"/></svg>,
+  drag:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="4" r="1" fill="#4b5563"/><circle cx="9" cy="4" r="1" fill="#4b5563"/><circle cx="5" cy="7" r="1" fill="#4b5563"/><circle cx="9" cy="7" r="1" fill="#4b5563"/><circle cx="5" cy="10" r="1" fill="#4b5563"/><circle cx="9" cy="10" r="1" fill="#4b5563"/></svg>,
+  export: <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  edit:   <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 9.5L1 12l2.5-1 7-7L9 2.5l-7 7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M9 2.5l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  bell:   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5A3.5 3.5 0 003.5 5v3.5l-1 1.5h9l-1-1.5V5A3.5 3.5 0 007 1.5z" stroke="currentColor" strokeWidth="1.3"/><path d="M5.5 12a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.3"/></svg>,
+  wm:     <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1l1.18 2.4 2.65.38-1.92 1.87.45 2.64L5 7.01 2.64 8.29l.45-2.64L1.17 3.78l2.65-.38L5 1z" stroke="#ff5c28" strokeWidth=".8" fill="rgba(255,92,40,.3)"/></svg>,
+};
+
+/* ═══════════════════════════════════════════════════════
+   SCREEN REGISTRY
+═══════════════════════════════════════════════════════ */
+const SECTIONS = [
+  { id:"A", label:"Onboarding & Consent", color:"#ff5c28",
+    screens:[
+      {id:1,label:"Welcome & Principles"},
+      {id:2,label:"Capture Mode"},
+      {id:3,label:"Permissions"},
+      {id:4,label:"Voice Consent"},
+      {id:5,label:"Bystander Protection"},
+      {id:6,label:"Resurfacing Prefs"},
+      {id:7,label:"Security & Ownership"},
+      {id:8,label:"Watermark Tutorial"},
+    ]},
+  { id:"B", label:"Account & Home", color:"#3b82f6",
+    screens:[
+      {id:9,label:"Sign In"},
+      {id:10,label:"My Memories"},
+      {id:11,label:"Add Memory"},
+    ]},
+  { id:"C", label:"StoryWeaver", color:"#a855f7",
+    screens:[
+      {id:12,label:"New Story"},
+      {id:13,label:"Media Picker"},
+      {id:14,label:"Notes Capture"},
+      {id:15,label:"Consent Review"},
+      {id:16,label:"Consent Status"},
+      {id:17,label:"Arrange Beats"},
+      {id:18,label:"Narration Voice"},
+      {id:19,label:"Music & Pacing"},
+      {id:20,label:"Preview"},
+    ]},
+  { id:"D", label:"Chapters", color:"#10b981",
+    screens:[
+      {id:21,label:"New Chapter"},
+      {id:22,label:"Invite Contributors"},
+      {id:23,label:"Chapter Feed"},
+      {id:24,label:"Review & Resolve"},
+      {id:25,label:"Publish Chapter"},
+    ]},
+  { id:"E", label:"Life Wrapped", color:"#f59e0b",
+    screens:[
+      {id:26,label:"New Wrap"},
+      {id:27,label:"Theme Review"},
+      {id:28,label:"Arrange & Export"},
+    ]},
+  { id:"F", label:"VR Memory Room", color:"#06b6d4",
+    screens:[
+      {id:29,label:"VR Safety Gate"},
+      {id:30,label:"VR HUD"},
+    ]},
+];
+const ALL_SCREENS = SECTIONS.flatMap(s=>s.screens);
+
+function sectionForId(id) { return SECTIONS.find(s=>s.screens.some(sc=>sc.id===id)); }
+
+/* ═══════════════════════════════════════════════════════
+   PHONE SHELL
+═══════════════════════════════════════════════════════ */
+function Phone({ children }) {
+  return (
+    <div style={{ width:340,height:720,borderRadius:48,border:"8px solid #16191e",background:C.bg1,overflow:"hidden",position:"relative",boxShadow:"0 24px 60px rgba(0,0,0,.7)",flexShrink:0 }}>
+      <div style={{ position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:128,height:24,background:"#16191e",borderBottomLeftRadius:16,borderBottomRightRadius:16,display:"flex",alignItems:"flex-end",justifyContent:"center",paddingBottom:6,zIndex:30 }}>
+        <div style={{ width:40,height:4,borderRadius:999,background:"rgba(0,0,0,.55)" }} />
+      </div>
+      <div style={{ position:"absolute",bottom:6,left:"50%",transform:"translateX(-50%)",width:108,height:4,borderRadius:999,background:"rgba(255,255,255,.16)",zIndex:30 }} />
+      <div style={{ position:"absolute",inset:0,overflow:"hidden" }}>{children}</div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION A: ONBOARDING ──────────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S1: Welcome & Principles
+function S1() {
+  const [exp, setExp] = useState(null);
+  const [started, setStarted] = useState(false);
+  const [toast, setT] = useState(null);
+  const [sheet, setSheet] = useState(false);
+  const feats = [
+    { Icon:()=>Ico.lock, title:"Local-First Archive", desc:"Stays on your device. We capture nothing.", detail:"AES-256 encryption in an isolated sandbox. Zero network requests without your consent." },
+    { Icon:()=>Ico.copy, title:"Copyright Ownership", desc:"You retain full rights to all your memories.", detail:"100% copyright ownership. Export or delete everything at any time." },
+    { Icon:()=>Ico.people, title:"Explicit Consent", desc:"Bystanders ethically managed by default.", detail:"Every person captured receives a consent request before appearing in any output." },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:"linear-gradient(185deg,rgba(255,92,40,.15) 0%,rgba(60,25,12,.6) 24%,#0d1014 52%)",padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <div className="row" onClick={()=>setT("TimeFold v1.0 · System Blueprint")} style={{ display:"flex",gap:8,alignItems:"center",padding:"4px 8px",marginLeft:-8,width:"fit-content",marginBottom:22 }}>
+        {Ico.wave}<span style={{ fontSize:10,color:C.accent,letterSpacing:"1px",textTransform:"uppercase" }}>TimeFold</span>
+      </div>
+      <div style={{ marginBottom:22 }}>
+        {["Preserve.","Protect."].map(w=><p key={w} className="row" onClick={()=>setT(`"${w}" — a core principle`)} style={{ fontFamily:C.fontSerif,fontSize:40,color:C.text,lineHeight:1.02,padding:"3px 6px",borderRadius:8 }}>{w}</p>)}
+        <p className="row" onClick={()=>setT("Your story. Forever yours.")} style={{ fontFamily:C.fontSerif,fontStyle:"italic",fontSize:40,color:C.muted,lineHeight:1,padding:"3px 6px",borderRadius:8 }}>Remember.</p>
+      </div>
+      {feats.map(({Icon,title,desc,detail})=>{
+        const open=exp===title;
+        return <div key={title} className="row" onClick={()=>setExp(open?null:title)} style={{ display:"flex",gap:13,alignItems:"flex-start",padding:"10px 10px",marginBottom:10,background:open?C.accentDim:"transparent",border:`1px solid ${open?C.borderLit:"transparent"}`,borderRadius:12,transition:"all .22s" }}>
+          <div style={{ flexShrink:0,width:30,height:30,borderRadius:"50%",background:open?"rgba(255,92,40,.25)":C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",marginTop:1,transition:"background .22s" }}><Icon/></div>
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <span style={{ fontSize:12,color:open?C.text:"#e5e7eb" }}>{title}</span>
+              <div style={{ transform:open?"rotate(180deg)":"none",transition:"transform .2s" }}>{Ico.chevD}</div>
+            </div>
+            <div style={{ fontSize:10,color:C.muted,lineHeight:1.6,marginTop:3 }}>{desc}</div>
+            {open&&<div style={{ fontSize:10,color:C.muted,lineHeight:1.75,marginTop:9,paddingTop:9,borderTop:`1px solid ${C.border}`,animation:"fadeUp .2s ease" }}>{detail}</div>}
+          </div>
+        </div>;
+      })}
+      <div style={{ marginTop:"auto",paddingTop:10,display:"flex",flexDirection:"column",gap:10 }}>
+        <PrimaryBtn label="Get Started" onClick={()=>{setStarted(true);setT("Setting up your archive…");}} done={started} doneLabel="Archive Ready" />
+        <SecondaryBtn label="Learn More" onClick={()=>setSheet(true)} />
+      </div>
+      <ProgressDots total={8} current={0}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+      {sheet&&<Sheet title="About TimeFold" body="TimeFold is a privacy-first memory archiving platform. No data ever leaves your device without explicit consent. Built by people who've lost irreplaceable memories." onClose={()=>setSheet(false)}/>}
+    </div>
+  );
+}
+
+// S2: Capture Mode Selection
+function S2() {
+  const [mode, setMode] = useState("manual");
+  const [toast, setT] = useState(null);
+  const [done, setDone] = useState(false);
+  const modes = [
+    { id:"manual", title:"Manual Upload", desc:"You choose exactly what enters your archive. Full control, always.", badge:"Default", recommended:true },
+    { id:"auto",   title:"Auto-Import", desc:"TimeFold quietly watches for new photos/videos and suggests imports.", badge:"Coming Soon", recommended:false },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="How should memories enter TimeFold?" sub="Capture Mode" />
+      <div style={{ display:"flex",flexDirection:"column",gap:12,flex:1 }}>
+        {modes.map(m=>{
+          const sel=mode===m.id;
+          return <div key={m.id} className="card" onClick={()=>{setMode(m.id);setT(m.id==="auto"?"Auto-import will be available in a future update":"Manual upload selected ✓");}} style={{ padding:18,borderRadius:16,border:`1px solid ${sel?C.accent:C.border}`,background:sel?C.accentDim:C.bg2,transition:"all .2s",opacity:m.id==="auto"?.7:1 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
+              <span style={{ fontSize:13,color:sel?C.text:C.muted,fontWeight:500 }}>{m.title}</span>
+              <div style={{ display:"flex",gap:6 }}>
+                {m.recommended&&<span style={{ fontSize:8,background:"rgba(255,92,40,.2)",color:C.accent,borderRadius:999,padding:"3px 8px",letterSpacing:"0.8px",textTransform:"uppercase" }}>Default</span>}
+                {m.id==="auto"&&<span style={{ fontSize:8,background:C.bg3,color:C.dim,borderRadius:999,padding:"3px 8px",letterSpacing:"0.8px",textTransform:"uppercase" }}>Soon</span>}
+              </div>
+            </div>
+            <p style={{ fontSize:10,color:C.muted,lineHeight:1.7 }}>{m.desc}</p>
+            <div style={{ marginTop:12,display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:16,height:16,borderRadius:"50%",border:`2px solid ${sel?C.accent:C.dim}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color .2s" }}>
+                {sel&&<div style={{ width:8,height:8,borderRadius:"50%",background:C.accent,animation:"checkPop .2s ease" }}/>}
+              </div>
+              <span style={{ fontSize:10,color:sel?C.accent:C.dim,letterSpacing:".5px",textTransform:"uppercase" }}>{sel?"Selected":"Select"}</span>
+            </div>
+          </div>;
+        })}
+      </div>
+      <div style={{ display:"flex",flexDirection:"column",gap:10,marginTop:16 }}>
+        <PrimaryBtn label="Next" onClick={()=>{setDone(true);setT("Capture mode saved ✓");}} done={done} doneLabel="Saved" />
+      </div>
+      <ProgressDots total={8} current={1}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S3: Permissions & Data Consent
+function S3() {
+  const [perms, setPerms] = useState({ camera:false, mic:false, files:false });
+  const [toast, setT] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const items = [
+    { key:"camera", Icon:()=>Ico.camera, title:"Camera", desc:"Capture photos and scan physical memories.", impact:"Without this, you can only upload existing files." },
+    { key:"mic",    Icon:()=>Ico.mic,    title:"Microphone", desc:"Record voice notes and audio beats.", impact:"Without this, voice narration and audio beats are disabled." },
+    { key:"files",  Icon:()=>Ico.folder, title:"Files & Photos", desc:"Browse and import from your device library.", impact:"Without this, you'll need to drag-and-drop media manually." },
+  ];
+  const toggle = (key) => {
+    setPerms(p=>({...p,[key]:!p[key]}));
+    setT(perms[key]?`${key} access revoked`:`${key} access granted ✓`);
+  };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Device Access" sub="Permissions & Data Consent" />
+      <div style={{ display:"flex",flexDirection:"column",gap:10,flex:1 }}>
+        {items.map(({key,Icon,title,desc,impact})=>{
+          const on=perms[key];
+          return <div key={key} className="card" onClick={()=>toggle(key)} style={{ padding:16,borderRadius:16,border:`1px solid ${on?C.borderLit:C.border}`,background:on?C.accentDim:C.bg2,transition:"all .22s" }}>
+            <div style={{ display:"flex",gap:12,alignItems:"center",marginBottom:8 }}>
+              <div style={{ width:36,height:36,borderRadius:12,background:on?"rgba(255,92,40,.2)":C.bg3,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:on?C.accent:C.muted }}><Icon/></div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13,color:on?C.text:C.muted,marginBottom:3 }}>{title}</div>
+                <div style={{ fontSize:10,color:C.muted,lineHeight:1.5 }}>{desc}</div>
+              </div>
+              <Toggle on={on} onChange={(e)=>{e.stopPropagation();toggle(key);}}/>
+            </div>
+            {!on&&<div style={{ fontSize:9,color:C.dim,lineHeight:1.5,paddingTop:8,borderTop:`1px solid ${C.border}` }}>⚠ {impact}</div>}
+          </div>;
+        })}
+      </div>
+      <div style={{ display:"flex",flexDirection:"column",gap:10,marginTop:16 }}>
+        <PrimaryBtn label="Allow Selected" onClick={()=>{setSaved(true);setT("Permissions saved ✓");}} done={saved} doneLabel="Permissions Saved" />
+        <SecondaryBtn label="Skip for Now" onClick={()=>setT("You can adjust permissions later in Settings")} />
+      </div>
+      <ProgressDots total={8} current={2}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S4: Voice Clone Consent
+function S4() {
+  const [enabled, setEnabled] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recorded, setRecorded] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [toast, setT] = useState(null);
+  const [secs, setSecs] = useState(0);
+  const timerRef = useRef(null);
+
+  const startRec = () => {
+    setRecording(true); setSecs(0);
+    timerRef.current = setInterval(()=>setSecs(s=>{ if(s>=10){clearInterval(timerRef.current);setRecording(false);setRecorded(true);setT("Voice sample recorded ✓");return 10;} return s+1; }),1000);
+  };
+  useEffect(()=>()=>clearInterval(timerRef.current),[]);
+
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Voice Clone Consent" sub="Narration · Opt-in" />
+      <p style={{ fontSize:11,color:C.muted,lineHeight:1.8,marginBottom:20 }}>Allow TimeFold to create a personalized narration voice from a 10-second sample. Your voice data never leaves your device.</p>
+      <div style={{ padding:18,borderRadius:16,border:`1px solid ${enabled?C.borderLit:C.border}`,background:enabled?C.accentDim:C.bg2,display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+        <div>
+          <div style={{ fontSize:13,color:C.text,marginBottom:4 }}>Enable Voice Narration</div>
+          <div style={{ fontSize:10,color:C.muted }}>Use my voice for story playback</div>
+        </div>
+        <Toggle on={enabled} onChange={()=>{setEnabled(!enabled);setT(enabled?"Voice clone disabled":"Voice clone enabled — record a sample below");}}/>
+      </div>
+      {enabled&&<div style={{ animation:"fadeUp .2s ease" }}>
+        <div style={{ padding:20,borderRadius:16,border:`1px solid ${C.border}`,background:C.bg2,marginBottom:16 }}>
+          <div style={{ fontSize:11,color:C.muted,marginBottom:14,lineHeight:1.7 }}>Read aloud: <span style={{ color:C.text,fontStyle:"italic" }}>"My memories are mine. I choose what to preserve and what to share."</span></div>
+          {!recorded?<button onClick={startRec} disabled={recording} className="btn" style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:recording?"#7f1d1d":C.red,color:"#fff",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",animation:recording?"recordPulse 1s infinite":"none",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+            <div style={{ width:8,height:8,borderRadius:"50%",background:recording?"#fff":"#fff" }}/>
+            {recording?`Recording… ${secs}s / 10s`:"Start Recording"}
+          </button>:
+          <div style={{ padding:12,borderRadius:12,background:"rgba(34,197,94,.1)",border:"1px solid rgba(34,197,94,.3)",display:"flex",alignItems:"center",gap:10 }}>
+            <span style={{ color:C.green,fontSize:18 }}>✓</span>
+            <span style={{ fontSize:11,color:C.green }}>Voice sample captured (10s)</span>
+          </div>}
+        </div>
+        <div style={{ padding:14,borderRadius:12,border:`1px solid ${C.border}`,background:C.bg3,marginBottom:16 }}>
+          <div style={{ fontSize:9,color:C.dim,lineHeight:1.8,letterSpacing:".3px" }}>CONSENT STATEMENT: I consent to TimeFold creating a voice model from my sample. This model is stored locally, used only for my own story narration, and can be deleted at any time from Settings.</div>
+        </div>
+      </div>}
+      <div style={{ marginTop:"auto",display:"flex",flexDirection:"column",gap:10 }}>
+        <PrimaryBtn label="Save Preference" onClick={()=>{setSaved(true);setT("Voice preference saved ✓");}} done={saved} doneLabel="Saved" />
+      </div>
+      <ProgressDots total={8} current={3}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S5: Bystander Protection Defaults
+function S5() {
+  const [togs, setTogs] = useState({ face:true, voice:true, blur:true, mute:true });
+  const [toast, setT] = useState(null);
+  const [sheet, setSheet] = useState(false);
+  const [cont, setCont] = useState(false);
+  const flip = (k)=>{ setTogs(p=>({...p,[k]:!p[k]})); setT(togs[k]?`${k} detection disabled`:`${k} detection enabled ✓`); };
+  const rows = [
+    { key:"face",  label:"Face Detection",   desc:"Identify bystanders in photos & video" },
+    { key:"voice", label:"Voice Detection",  desc:"Identify speakers in audio recordings" },
+    { key:"blur",  label:"Auto-Blur Faces",  desc:"Automatically obscure unverified faces" },
+    { key:"mute",  label:"Background Muting",desc:"Suppress ambient conversations in audio" },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Bystander Protection" sub="Privacy Defaults" />
+      {/* Preview */}
+      <div style={{ height:120,borderRadius:16,background:"#0c0f14",border:`1px solid ${C.border}`,overflow:"hidden",position:"relative",marginBottom:16,flexShrink:0 }}>
+        <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"flex-end",justifyContent:"center",gap:12,paddingBottom:16 }}>
+          {[.9,1,.85,.75,1].map((sc,i)=><div key={i} style={{ width:20*sc,display:"flex",flexDirection:"column",alignItems:"center",gap:2,opacity:togs.blur?.1:.5,filter:togs.blur?"blur(5px)":"none",transition:"all .5s ease" }}>
+            <div style={{ width:12*sc,height:12*sc,borderRadius:"50%",background:"#4b5563" }}/>
+            <div style={{ width:18*sc,height:36*sc,borderRadius:"4px 4px 0 0",background:"#374151" }}/>
+          </div>)}
+        </div>
+        <div style={{ position:"absolute",inset:0,background:"linear-gradient(180deg,transparent 40%,#0c0f14 100%)" }}/>
+        <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center" }}>
+          <div style={{ display:"flex",gap:8,alignItems:"center",background:"rgba(0,0,0,.72)",border:`1px solid ${togs.blur?"rgba(255,92,40,.4)":"rgba(255,255,255,.1)"}`,borderRadius:999,padding:"6px 14px",backdropFilter:"blur(8px)" }}>
+            <span style={{ color:togs.blur?C.accent:C.muted,fontSize:12 }}>{Ico.shield}</span>
+            <span style={{ fontSize:10,color:togs.blur?C.accent:C.muted,letterSpacing:"1px",textTransform:"uppercase" }}>{togs.blur?"Identities Protected":"Identities Visible"}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ display:"flex",flexDirection:"column",gap:10,flex:1 }}>
+        {rows.map(({key,label,desc})=><div key={key} className="card" onClick={()=>flip(key)} style={{ padding:"14px 16px",borderRadius:14,border:`1px solid ${togs[key]?C.borderLit:C.border}`,background:togs[key]?C.accentDim:C.bg2,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .22s" }}>
+          <div>
+            <div style={{ fontSize:12,color:togs[key]?C.text:C.muted,marginBottom:3 }}>{label}</div>
+            <div style={{ fontSize:10,color:C.muted }}>{desc}</div>
+          </div>
+          <Toggle on={togs[key]} onChange={e=>{e.stopPropagation();flip(key);}}/>
+        </div>)}
+      </div>
+      <div style={{ display:"flex",flexDirection:"column",gap:10,marginTop:14 }}>
+        <button className="btn" onClick={()=>setSheet(true)} style={{ background:"none",border:"none",fontSize:10,color:C.muted,letterSpacing:"1px",textTransform:"uppercase",textDecoration:"underline",fontFamily:C.fontSans,padding:"4px 0" }}>Why this matters</button>
+        <PrimaryBtn label="Save Defaults" onClick={()=>{setCont(true);setT("Privacy defaults saved ✓");}} done={cont} doneLabel="Saved"/>
+      </div>
+      <ProgressDots total={8} current={4}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+      {sheet&&<Sheet title="Why This Matters" body="Most apps expose bystanders without consent. TimeFold anonymizes non-consenting individuals using on-device ML, ensuring you stay ethical even when you forget. Processing happens entirely locally — no biometric data ever leaves your phone." onClose={()=>setSheet(false)}/>}
+    </div>
+  );
+}
+
+// S6: Resurfacing Preferences
+function S6() {
+  const [muted, setMuted] = useState([]);
+  const [cadence, setCadence] = useState(1);
+  const [saved, setSaved] = useState(false);
+  const [toast, setT] = useState(null);
+  const people = ["Sarah","Dad","Old Job","Ex-Partner","Childhood Home","2020"];
+  const cads = ["Never","Monthly","Weekly","Daily"];
+  const toggleMute = (p) => {
+    setMuted(prev=>prev.includes(p)?prev.filter(x=>x!==p):[...prev,p]);
+    setT(muted.includes(p)?`${p} unmuted`:`${p} muted — won't surface in wraps`);
+  };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Resurfacing Preferences" sub="Emotional Safety" />
+      <p style={{ fontSize:10,color:C.muted,lineHeight:1.7,marginBottom:18 }}>Choose topics to mute or snooze so they don't appear in your memory recaps.</p>
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Tap to mute people & dates</div>
+        <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
+          {people.map(p=>{
+            const on=muted.includes(p);
+            return <Chip key={p} label={on?`${p} ✕`:p} active={on} onClick={()=>toggleMute(p)} color="#ef4444"/>;
+          })}
+        </div>
+      </div>
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:12 }}>Memory recap cadence</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
+          {cads.map((c,i)=><div key={c} className="row" onClick={()=>{setCadence(i);setT(`Cadence set to ${c}`);}} style={{ padding:"12px 14px",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"space-between",background:cadence===i?C.accentDim:"transparent",border:`1px solid ${cadence===i?C.borderLit:"transparent"}`,transition:"all .2s" }}>
+            <span style={{ fontSize:12,color:cadence===i?C.text:C.muted }}>{c}</span>
+            {cadence===i&&<span style={{ color:C.accent,animation:"checkPop .2s ease" }}>{Ico.check}</span>}
+          </div>)}
+        </div>
+      </div>
+      <div style={{ padding:14,borderRadius:12,background:C.bg2,border:`1px solid ${C.border}`,marginBottom:16 }}>
+        <div style={{ fontSize:10,color:C.muted,lineHeight:1.7 }}>Muted: <span style={{ color:C.text }}>{muted.length?muted.join(", "):"None"}</span> · Cadence: <span style={{ color:C.text }}>{cads[cadence]}</span></div>
+      </div>
+      <div style={{ marginTop:"auto",display:"flex",flexDirection:"column",gap:10 }}>
+        <PrimaryBtn label="Save" onClick={()=>{setSaved(true);setT("Resurfacing preferences saved ✓");}} done={saved} doneLabel="Saved"/>
+      </div>
+      <ProgressDots total={8} current={5}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S7: Security & Ownership
+function S7() {
+  const [pin, setPin] = useState([]);
+  const [backup, setBackup] = useState(false);
+  const [toast, setT] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const addDigit = (d) => {
+    if(pin.length>=4) return;
+    const next=[...pin,d];
+    setPin(next);
+    if(next.length===4){ setSaved(true); setT("PIN set ✓ Your archive is secured"); }
+  };
+  const clearPin = () => { setPin([]); setSaved(false); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Security & Ownership" sub="Trust & Control" />
+      {/* Local-first badge */}
+      <div style={{ padding:16,borderRadius:14,background:C.accentDim,border:`1px solid ${C.borderLit}`,display:"flex",gap:12,alignItems:"center",marginBottom:18 }}>
+        {Ico.shield}
+        <div>
+          <div style={{ fontSize:12,color:C.accent,marginBottom:2 }}>Local-First Architecture</div>
+          <div style={{ fontSize:10,color:C.muted,lineHeight:1.5 }}>All data stays on your device. TimeFold has zero access to your memories.</div>
+        </div>
+      </div>
+      {/* PIN */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:14 }}>Create a 4-digit PIN</div>
+        <div style={{ display:"flex",justifyContent:"center",gap:14,marginBottom:20 }}>
+          {[0,1,2,3].map(i=><div key={i} style={{ width:44,height:44,borderRadius:12,border:`2px solid ${i<pin.length?C.accent:C.border}`,background:i<pin.length?C.accentDim:C.bg2,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s" }}>
+            {i<pin.length&&<div style={{ width:12,height:12,borderRadius:"50%",background:C.accent,animation:"checkPop .2s ease" }}/>}
+          </div>)}
+        </div>
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
+          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((d,i)=><button key={i} onClick={()=>d==="⌫"?clearPin():d!==""&&addDigit(d)} className="btn" style={{ padding:"14px",borderRadius:12,border:`1px solid ${C.border}`,background:C.bg2,color:d==="⌫"?C.red:C.text,fontFamily:C.fontSans,fontSize:16,opacity:d===""?0:1 }}>{d}</button>)}
+        </div>
+      </div>
+      {/* Backup toggle */}
+      <div className="card" onClick={()=>{setBackup(!backup);setT(backup?"Encrypted backup disabled":"Encrypted backup enabled ✓");}} style={{ padding:16,borderRadius:14,border:`1px solid ${backup?C.borderLit:C.border}`,background:backup?C.accentDim:C.bg2,display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+        <div>
+          <div style={{ fontSize:12,color:backup?C.text:C.muted,marginBottom:3 }}>Encrypted Backup</div>
+          <div style={{ fontSize:10,color:C.muted }}>Optional — end-to-end encrypted off-device copy</div>
+        </div>
+        <Toggle on={backup} onChange={e=>{e.stopPropagation();setBackup(!backup);setT(backup?"Backup disabled":"Encrypted backup enabled ✓");}}/>
+      </div>
+      <div style={{ fontSize:9,color:C.dim,lineHeight:1.7,padding:"10px 14px",borderRadius:10,background:C.bg2 }}>
+        Data retention: Your memories are stored indefinitely unless you delete them. You can export or purge everything at any time from Settings → Archive.
+      </div>
+      <ProgressDots total={8} current={6}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S8: Reality Watermark Tutorial
+function S8() {
+  const [sel, setSel] = useState(null);
+  const [done, setDone] = useState(false);
+  const [split, setSplit] = useState(false);
+  const [sliderX, setSliderX] = useState(50);
+  const [toast, setT] = useState(null);
+  const ref = useRef(null);
+  const drag = useRef(false);
+  const move = (cx) => { if(!ref.current) return; const r=ref.current.getBoundingClientRect(); setSliderX(Math.max(5,Math.min(95,((cx-r.left)/r.width)*100))); };
+  const answers = [
+    { id:0, text:"Prevents the memory from being shared.", correct:false },
+    { id:1, text:"Marks AI-enhanced or repaired elements.", correct:true },
+    { id:2, text:"Indicates a fabricated memory.", correct:false },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:14 }}>
+      <SectionHeader label="The Reality Watermark" sub="Recorded vs Repaired" />
+      <div>
+        <div style={{ display:"flex",justifyContent:"flex-end",marginBottom:8 }}>
+          <button className="btn" onClick={()=>setSplit(!split)} style={{ background:"none",border:"none",fontSize:9,color:C.muted,letterSpacing:".8px",textTransform:"uppercase",fontFamily:C.fontSans }}>{split?"← card view":"try split view →"}</button>
+        </div>
+        {split?
+          <div ref={ref} onMouseDown={()=>{drag.current=true;}} onMouseMove={e=>{if(drag.current)move(e.clientX);}} onMouseUp={()=>{drag.current=false;}} onMouseLeave={()=>{drag.current=false;}} onClick={e=>move(e.clientX)} style={{ height:140,borderRadius:16,overflow:"hidden",position:"relative",cursor:"ew-resize",border:`1px solid ${C.border}` }}>
+            <div style={{ position:"absolute",inset:0,background:"#1c2028",display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <div style={{ opacity:.3,display:"flex",flexDirection:"column",alignItems:"center",gap:5 }}><div style={{ width:56,height:36,borderRadius:6,background:"#374151" }}/><div style={{ width:76,height:5,borderRadius:3,background:"#374151" }}/></div>
+              <div style={{ position:"absolute",top:8,left:8,background:"rgba(0,0,0,.85)",borderRadius:4,padding:"3px 8px" }}><span style={{ fontSize:8,color:C.muted,letterSpacing:".8px",textTransform:"uppercase" }}>Recorded</span></div>
+            </div>
+            <div style={{ position:"absolute",inset:0,clipPath:`inset(0 ${100-sliderX}% 0 0)`,background:"#0d1826",display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:5 }}><div style={{ width:56,height:36,borderRadius:6,background:"linear-gradient(135deg,#1a3a60,#2563a8)",boxShadow:"0 0 20px rgba(37,99,168,.5)" }}/><div style={{ width:76,height:5,borderRadius:3,background:"linear-gradient(90deg,#1a3a60,#2563a8)" }}/></div>
+              <div style={{ position:"absolute",top:8,left:8,background:C.accent,borderRadius:4,padding:"3px 8px",display:"flex",gap:4,alignItems:"center" }}>{Ico.star}<span style={{ fontSize:8,color:"#000",letterSpacing:".8px",textTransform:"uppercase" }}>Repaired</span></div>
+            </div>
+            <div style={{ position:"absolute",top:0,bottom:0,left:`${sliderX}%`,width:2,background:C.accent,transform:"translateX(-50%)",boxShadow:`0 0 8px ${C.accent}`,pointerEvents:"none" }}>
+              <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:22,height:22,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#000" }}>↔</div>
+            </div>
+          </div>:
+          <div style={{ display:"flex",gap:10 }}>
+            <div className="card" onClick={()=>setT("Original — unprocessed capture")} style={{ flex:1,height:140,borderRadius:16,overflow:"hidden",border:`1px solid ${C.border}`,background:"#1c2028",position:"relative",display:"flex",alignItems:"center",justifyContent:"center" }}>
+              <div style={{ opacity:.3,display:"flex",flexDirection:"column",alignItems:"center",gap:5 }}><div style={{ width:52,height:34,borderRadius:6,background:"#374151" }}/><div style={{ width:70,height:5,borderRadius:3,background:"#374151" }}/></div>
+              <div style={{ position:"absolute",top:8,left:8,background:"rgba(0,0,0,.85)",borderRadius:4,padding:"3px 8px" }}><span style={{ fontSize:8,color:C.muted,letterSpacing:".8px",textTransform:"uppercase" }}>Recorded</span></div>
+            </div>
+            <div className="card" onClick={()=>setT("AI-enhanced — amber watermark marks modified regions")} style={{ flex:1,height:140,borderRadius:16,overflow:"hidden",border:`1px solid ${C.accent}`,background:"#0d1826",position:"relative",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 0 18px rgba(255,92,40,.15)" }}>
+              <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:5 }}><div style={{ width:52,height:34,borderRadius:6,background:"linear-gradient(135deg,#1a3a60,#2563a8)",boxShadow:"0 0 16px rgba(37,99,168,.5)" }}/><div style={{ width:70,height:5,borderRadius:3,background:"linear-gradient(90deg,#1a3a60,#2563a8)" }}/></div>
+              <div style={{ position:"absolute",top:8,left:8,background:C.accent,borderRadius:4,padding:"3px 8px",display:"flex",gap:4,alignItems:"center" }}>{Ico.star}<span style={{ fontSize:8,color:"#000",letterSpacing:".8px",textTransform:"uppercase" }}>Repaired</span></div>
+            </div>
+          </div>
+        }
+      </div>
+      <div style={{ background:C.bg2,border:`1px solid ${C.border}`,borderRadius:16,padding:"16px 18px",flex:1 }}>
+        <p style={{ fontSize:11,color:C.text,lineHeight:1.7,marginBottom:12 }}>What does the <span style={{ color:C.accent }}>amber watermark</span> indicate?</p>
+        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {answers.map(a=>{
+            const isSel=sel===a.id, rev=sel!==null;
+            return <button key={a.id} onClick={()=>{if(sel===null){setSel(a.id);setT(a.correct?"✓ Correct!":"✗ Not quite — the amber mark indicates AI enhancement");}}} style={{ textAlign:"left",padding:"11px 14px",borderRadius:12,cursor:sel!==null?"default":"pointer",fontFamily:C.fontSans,fontSize:10,lineHeight:1.6,border:isSel?(a.correct?"1px solid #22c55e":"1px solid rgba(239,68,68,.5)"):(rev&&a.correct?"1px solid rgba(34,197,94,.25)":"1px solid rgba(255,255,255,.07)"),background:isSel?(a.correct?"rgba(34,197,94,.12)":"rgba(239,68,68,.09)"):(rev&&a.correct?"rgba(34,197,94,.05)":"transparent"),color:isSel?(a.correct?"#86efac":"#fca5a5"):(rev&&a.correct?"#86efac":C.muted),transition:"all .22s",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+              <span>{a.text}</span>
+              {isSel&&<span style={{ animation:"checkPop .3s ease",fontSize:14,flexShrink:0 }}>{a.correct?"✓":"✗"}</span>}
+              {!isSel&&rev&&a.correct&&<span style={{ color:"#86efac",fontSize:14 }}>✓</span>}
+            </button>;
+          })}
+        </div>
+      </div>
+      <PrimaryBtn label="Finish Setup" onClick={()=>{setDone(true);setT("🎉 Setup complete! Welcome to TimeFold.");}} done={done} doneLabel="Setup Complete!" />
+      <ProgressDots total={8} current={7}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION B: ACCOUNT & HOME ──────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S9: Sign In / Create Account
+function S9() {
+  const [email, setEmail] = useState("");
+  const [stage, setStage] = useState("email"); // email | otp | done
+  const [otp, setOtp] = useState(["","","","","",""]);
+  const [toast, setT] = useState(null);
+  const refs = [useRef(),useRef(),useRef(),useRef(),useRef(),useRef()];
+  const submitEmail = () => { if(email.includes("@")){ setStage("otp"); setT("Magic link sent to "+email); } else setT("Enter a valid email address"); };
+  const inputOtp = (i, val) => {
+    if(!/^\d?$/.test(val)) return;
+    const next=[...otp]; next[i]=val; setOtp(next);
+    if(val&&i<5) refs[i+1].current?.focus();
+    if(next.every(d=>d)){ setStage("done"); setT("Signed in ✓ Welcome back!"); }
+  };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"80px 22px 36px",display:"flex",flexDirection:"column",fontFamily:C.fontSans }}>
+      <div style={{ display:"flex",gap:8,alignItems:"center",marginBottom:36 }}>{Ico.wave}<span style={{ fontSize:10,color:C.accent,letterSpacing:"1px",textTransform:"uppercase" }}>TimeFold</span></div>
+      {stage==="done"?
+        <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,animation:"fadeUp .3s ease" }}>
+          <div style={{ width:64,height:64,borderRadius:"50%",background:"rgba(34,197,94,.15)",border:"1px solid rgba(34,197,94,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,marginBottom:8 }}>✓</div>
+          <div style={{ fontFamily:C.fontSerif,fontSize:28,color:C.text }}>Signed in</div>
+          <div style={{ fontSize:11,color:C.muted }}>Welcome back to your archive</div>
+        </div>:
+        <>
+          <div style={{ fontFamily:C.fontSerif,fontSize:30,color:C.text,marginBottom:8 }}>{stage==="email"?"Sign In":"Check your email"}</div>
+          <div style={{ fontSize:11,color:C.muted,marginBottom:28,lineHeight:1.7 }}>{stage==="email"?"Enter your email to receive a magic link.":(`We sent a 6-digit code to ${email}`)}</div>
+          {stage==="email"?<>
+            <Input placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} type="email" onKeyDown={e=>e.key==="Enter"&&submitEmail()}/>
+            <div style={{ marginTop:16 }}><PrimaryBtn label="Continue" onClick={submitEmail}/></div>
+          </>:<>
+            <div style={{ display:"flex",gap:8,justifyContent:"center",marginBottom:20 }}>
+              {otp.map((d,i)=><input key={i} ref={refs[i]} value={d} onChange={e=>inputOtp(i,e.target.value)} maxLength={1} style={{ width:42,height:52,borderRadius:12,border:`2px solid ${d?C.accent:C.border}`,background:d?C.accentDim:C.bg2,color:C.text,fontFamily:C.fontSans,fontSize:20,textAlign:"center",outline:"none",transition:"all .2s" }}/>)}
+            </div>
+            <button className="btn" onClick={()=>{setStage("email");setOtp(["","","","","",""]);}} style={{ background:"none",border:"none",fontSize:10,color:C.muted,textDecoration:"underline",fontFamily:C.fontSans,padding:0 }}>Use a different email</button>
+          </>}
+          <div style={{ marginTop:"auto",fontSize:9,color:C.dim,textAlign:"center",lineHeight:1.7 }}>By continuing you agree to our <span style={{ color:C.muted,textDecoration:"underline",cursor:"pointer" }} onClick={()=>setT("Terms of Service opened")}>Terms</span> and <span style={{ color:C.muted,textDecoration:"underline",cursor:"pointer" }} onClick={()=>setT("Privacy Policy opened")}>Privacy Policy</span>.</div>
+        </>
+      }
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S10: Home / My Memories
+function S10() {
+  const [toast, setT] = useState(null);
+  const [search, setSearch] = useState("");
+  const [searchFocus, setSearchFocus] = useState(false);
+  const [fab, setFab] = useState(false);
+  const [active, setActive] = useState(null);
+  const searchRef = useRef(null);
+  useEffect(()=>{ if(searchFocus) searchRef.current?.focus(); },[searchFocus]);
+  const cards = [
+    { id:"summer", badge:"Wrap", bc:C.accent, title:"Summer Echoes", meta:"2023 · 12 Stories", glow:"rgba(255,92,40,.3)" },
+    { id:"kyoto",  badge:"Story",bc:C.blue,   title:"Kyoto Trip",    meta:"Nov · 14 Beats",    glow:"rgba(59,130,246,.3)" },
+    { id:"dads",   badge:"Chapter",bc:"#10b981",title:"Dad's 60th",  meta:"Family · Shared",   glow:"rgba(16,185,129,.3)" },
+  ];
+  const fabActs = [
+    { e:"📖", label:"New Story" },
+    { e:"🗂", label:"New Chapter" },
+    { e:"🎁", label:"New Wrap" },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 0 80px",display:"flex",flexDirection:"column",fontFamily:C.fontSans }}>
+      {/* Header */}
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 22px",marginBottom:20 }}>
+        <h1 style={{ fontFamily:C.fontSerif,fontSize:28,color:C.text }}>My Memories</h1>
+        <div style={{ display:"flex",gap:8 }}>
+          <button className="btn" onClick={()=>setT("Notifications opened")} style={{ background:"none",border:"none",color:C.muted,padding:4 }}>{Ico.bell}</button>
+          <button className="btn" onClick={()=>setT("Profile opened")} style={{ width:32,height:32,borderRadius:"50%",border:`1px solid ${C.border}`,background:C.bg2,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted }}>{Ico.people}</button>
+        </div>
+      </div>
+      {/* Search */}
+      <div onClick={()=>setSearchFocus(true)} style={{ margin:"0 22px 20px",background:C.bg2,border:`1px solid ${searchFocus?C.borderLit:C.border}`,borderRadius:14,padding:"12px 14px",display:"flex",gap:10,alignItems:"center",transition:"border-color .2s",cursor:"text",boxShadow:searchFocus?`0 0 14px rgba(255,92,40,.1)`:"none" }}>
+        {Ico.search}
+        {searchFocus?<input ref={searchRef} value={search} onChange={e=>setSearch(e.target.value)} onBlur={()=>{if(!search)setSearchFocus(false);}} onKeyDown={e=>{if(e.key==="Escape"){setSearch("");setSearchFocus(false);}if(e.key==="Enter"&&search)setT(`Searching for "${search}"…`);}} style={{ background:"none",border:"none",outline:"none",flex:1,color:C.text,fontFamily:C.fontSans,fontSize:12 }} placeholder="Search memories…"/>:
+        <span style={{ fontSize:12,color:C.muted }}>Search memories, places, people</span>}
+        {search&&<button onClick={e=>{e.stopPropagation();setSearch("");setSearchFocus(false);}} style={{ background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14 }}>✕</button>}
+      </div>
+      {/* Cards */}
+      <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",padding:"0 22px",marginBottom:12 }}>Highlights</div>
+      <div style={{ display:"flex",gap:12,paddingLeft:22,paddingRight:22,overflowX:"auto",marginBottom:22,paddingBottom:4 }}>
+        {cards.map(c=><div key={c.id} className="card" onClick={()=>{setActive(active===c.id?null:c.id);setT(`Opening ${c.title}…`);}} style={{ width:158,height:210,borderRadius:20,flexShrink:0,background:`linear-gradient(140deg,${C.bg3} 0%,${C.bg1} 100%)`,padding:16,display:"flex",flexDirection:"column",justifyContent:"flex-end",position:"relative",border:`1px solid ${active===c.id?c.bc:"rgba(255,255,255,.07)"}`,boxShadow:active===c.id?`0 0 24px ${c.glow}`:"none",overflow:"hidden",transition:"all .28s" }}>
+          <div style={{ position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:70,height:70,borderRadius:"50%",background:c.glow,filter:"blur(28px)",pointerEvents:"none" }}/>
+          <div style={{ position:"absolute",top:12,left:12,background:"rgba(0,0,0,.55)",backdropFilter:"blur(6px)",borderRadius:4,padding:"4px 9px",border:`1px solid rgba(255,255,255,.07)` }}>
+            <span style={{ fontSize:8,color:c.bc,letterSpacing:".8px",textTransform:"uppercase" }}>{c.badge}</span>
+          </div>
+          <div style={{ fontFamily:C.fontSerif,fontSize:19,color:C.text,lineHeight:1.1,marginBottom:4,position:"relative",whiteSpace:"pre-line" }}>{c.title}</div>
+          <div style={{ fontSize:9,color:C.muted,position:"relative" }}>{c.meta}</div>
+        </div>)}
+      </div>
+      {/* Recent */}
+      <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",padding:"0 22px",marginBottom:12 }}>Recent</div>
+      <div style={{ flex:1,overflowY:"auto",padding:"0 22px" }}>
+        {[{title:"Morning Run",meta:"Today · 3 beats",icon:"🏃"},{title:"Farmers Market",meta:"Yesterday · 8 beats",icon:"🥬"},{title:"Museum Visit",meta:"Sat · 15 beats",icon:"🏛"}].map(({title,meta,icon})=>
+          <div key={title} className="row" onClick={()=>setT(`Opening ${title}…`)} style={{ display:"flex",gap:12,alignItems:"center",padding:"12px 10px",marginBottom:6 }}>
+            <div style={{ width:44,height:44,borderRadius:12,background:C.bg2,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>{icon}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13,color:C.text,marginBottom:2 }}>{title}</div>
+              <div style={{ fontSize:10,color:C.muted }}>{meta}</div>
+            </div>
+            {Ico.chevR}
+          </div>
+        )}
+      </div>
+      {/* FAB */}
+      <div style={{ position:"absolute",bottom:32,right:22,zIndex:60 }}>
+        {fab&&<div style={{ position:"absolute",bottom:60,right:0,display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",animation:"slideUp .2s ease" }}>
+          {fabActs.map(({e,label})=><button key={label} className="btn" onClick={()=>{setT(`Starting: ${label}`);setFab(false);}} style={{ display:"flex",gap:9,alignItems:"center",background:C.bg2,border:`1px solid ${C.border}`,borderRadius:99,padding:"9px 14px 9px 10px",fontFamily:C.fontSans,fontSize:10,color:C.text,whiteSpace:"nowrap",boxShadow:"0 10px 28px rgba(0,0,0,.45)" }}><span style={{ fontSize:14 }}>{e}</span>{label}</button>)}
+        </div>}
+        <button className="btn" onClick={()=>setFab(!fab)} style={{ width:52,height:52,borderRadius:"50%",background:fab?"#c44624":C.accent,border:"none",boxShadow:`0 0 22px rgba(255,92,40,.5)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#000",transform:fab?"rotate(45deg)":"rotate(0deg)",transition:"all .28s cubic-bezier(.34,1.56,.64,1)" }}>{Ico.plus}</button>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S11: Add Memory
+function S11() {
+  const [selected, setSelected] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [note, setNote] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [toast, setT] = useState(null);
+  const items = Array.from({length:9},(_,i)=>({ id:i, e:["🏔","🌅","🎵","🌊","🌿","🏙","🍜","🎭","🎨"][i], label:["Mountains","Sunset","Concert","Beach","Hike","City","Dinner","Theater","Art"][i] }));
+  const tagOpts = ["Family","Travel","Food","Music","Nature","Work","Friends"];
+  const togSel = (id)=>setSelected(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+  const togTag = (t)=>setTags(p=>p.includes(t)?p.filter(x=>x!==t):[...p,t]);
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Add Memory" sub="Manual Upload" />
+      <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Select media ({selected.length} selected)</div>
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:18 }}>
+        {items.map(({id,e,label})=>{
+          const sel=selected.includes(id);
+          return <div key={id} className="card" onClick={()=>togSel(id)} style={{ aspectRatio:"1",borderRadius:12,background:sel?C.accentDim:C.bg2,border:`1px solid ${sel?C.accent:C.border}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,transition:"all .2s",position:"relative" }}>
+            <span style={{ fontSize:22 }}>{e}</span>
+            <span style={{ fontSize:8,color:sel?C.accent:C.muted,textTransform:"uppercase",letterSpacing:".5px" }}>{label}</span>
+            {sel&&<div style={{ position:"absolute",top:6,right:6,width:16,height:16,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",animation:"checkPop .2s ease" }}><span style={{ fontSize:10,color:"#000" }}>✓</span></div>}
+          </div>;
+        })}
+      </div>
+      <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Tags</div>
+      <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginBottom:18 }}>
+        {tagOpts.map(t=><Chip key={t} label={t} active={tags.includes(t)} onClick={()=>{togTag(t);setT(tags.includes(t)?`${t} removed`:`${t} tagged`);}}/>)}
+      </div>
+      <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Diary Note</div>
+      <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Add context or feelings about this memory…" style={{ background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none",resize:"none",height:80,lineHeight:1.6,marginBottom:16 }}/>
+      <PrimaryBtn label={`Save ${selected.length||""} Item${selected.length!==1?"s":""}`} onClick={()=>{if(selected.length){setSaved(true);setT(`${selected.length} item${selected.length!==1?"s":""} added to archive ✓`);}else setT("Select at least one item to save");}} done={saved} doneLabel="Saved to Archive" disabled={selected.length===0}/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION C: STORYWEAVER ─────────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S12: New Story
+function S12() {
+  const [title, setTitle] = useState("");
+  const [dates, setDates] = useState({ start:"", end:"" });
+  const [cover, setCover] = useState(null);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const covers = ["🌅","🏔","🌊","🌿","🏙","🎭","🎵","🌸"];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:16 }}>
+      <SectionHeader label="New Story" sub="Frame your event" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Story Title</div>
+        <Input placeholder="e.g. Kyoto Trip, Summer Wedding…" value={title} onChange={e=>setTitle(e.target.value)}/>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Date Range</div>
+        <div style={{ display:"flex",gap:8 }}>
+          <input type="date" value={dates.start} onChange={e=>setDates(p=>({...p,start:e.target.value}))} style={{ flex:1,background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none" }}/>
+          <input type="date" value={dates.end} onChange={e=>setDates(p=>({...p,end:e.target.value}))} style={{ flex:1,background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none" }}/>
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Cover Emoji</div>
+        <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+          {covers.map(c=><button key={c} className="btn" onClick={()=>{setCover(c);setT(`Cover set to ${c}`);}} style={{ width:46,height:46,borderRadius:12,border:`1px solid ${cover===c?C.accent:C.border}`,background:cover===c?C.accentDim:C.bg2,fontSize:22,transition:"all .2s" }}>{c}</button>)}
+        </div>
+      </div>
+      {(title||cover)&&<div style={{ padding:16,borderRadius:14,background:C.bg2,border:`1px solid ${C.border}`,display:"flex",gap:12,alignItems:"center",animation:"fadeUp .2s ease" }}>
+        <div style={{ width:46,height:46,borderRadius:12,background:C.accentDim,border:`1px solid ${C.borderLit}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>{cover||"📖"}</div>
+        <div>
+          <div style={{ fontSize:14,color:C.text,fontFamily:C.fontSerif }}>{title||"Untitled Story"}</div>
+          <div style={{ fontSize:10,color:C.muted,marginTop:3 }}>{dates.start||"No start date"}{dates.end?` → ${dates.end}`:""}</div>
+        </div>
+      </div>}
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label="Next: Pick Media" onClick={()=>{if(title){setDone(true);setT("Story created ✓");}else setT("Add a title first");}} done={done} doneLabel="Story Created"/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S13: Media Picker
+function S13() {
+  const [selected, setSelected] = useState([]);
+  const [filter, setFilter] = useState("All");
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const filters = ["All","Nov '23","People","Places"];
+  const items = Array.from({length:12},(_,i)=>({ id:i, e:["🏯","⛩","🌸","🍣","🚢","🌙","🎋","🎑","🏮","🌅","🌊","🎭"][i] }));
+  const togSel=(id)=>setSelected(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans }}>
+      <SectionHeader label="Pick Media" sub={`${selected.length} selected`} />
+      <div style={{ display:"flex",gap:8,marginBottom:16,overflowX:"auto" }}>
+        {filters.map(f=><Chip key={f} label={f} active={filter===f} onClick={()=>setFilter(f)}/>)}
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:5,flex:1,overflowY:"auto" }}>
+        {items.map(({id,e})=>{
+          const sel=selected.includes(id);
+          return <div key={id} className="card" onClick={()=>togSel(id)} style={{ aspectRatio:"1",borderRadius:10,background:C.bg2,border:`2px solid ${sel?C.accent:"transparent"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,position:"relative",transition:"all .15s" }}>
+            {e}
+            {sel&&<div style={{ position:"absolute",top:4,right:4,width:18,height:18,borderRadius:"50%",background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#000",animation:"checkPop .2s ease" }}>{selected.indexOf(id)+1}</div>}
+          </div>;
+        })}
+      </div>
+      <div style={{ paddingTop:14 }}>
+        <PrimaryBtn label={selected.length?`Add ${selected.length} Item${selected.length!==1?"s":""}  →`:"Select items to continue"} onClick={()=>{if(selected.length){setDone(true);setT(`${selected.length} items added to story ✓`);}else setT("Tap media items to select them");}} done={done} doneLabel="Media Added" disabled={selected.length===0}/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S14: Notes Capture
+function S14() {
+  const [note, setNote] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [secs, setSecs] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const timer = useRef(null);
+  const phrases = ["The cherry blossoms were in full bloom along the river path.","We stopped at a tiny ramen shop — best soup I've ever had.","The temple bell rang at 6am and echoed through the mountain air."];
+  const startRec = () => {
+    setRecording(true); setSecs(0); let i=0;
+    timer.current = setInterval(()=>setSecs(s=>{ if(s>=8){ clearInterval(timer.current); setRecording(false); setTranscript(phrases[Math.floor(Math.random()*phrases.length)]); setT("Voice note transcribed ✓"); return 8; } return s+1; }),1000);
+  };
+  useEffect(()=>()=>clearInterval(timer.current),[]);
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,gap:14 }}>
+      <SectionHeader label="Notes & Context" sub="Text or Voice" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Text Note</div>
+        <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Describe the memory, feelings, sensory details…" style={{ width:"100%",background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none",resize:"none",height:100,lineHeight:1.7 }}/>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Voice Note → Transcript</div>
+        {!recording&&!transcript?
+          <button className="btn" onClick={startRec} style={{ width:"100%",padding:14,borderRadius:12,border:`1px solid ${C.border}`,background:C.bg2,color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+            {Ico.mic} Start Voice Recording
+          </button>:
+          recording?<div style={{ padding:16,borderRadius:12,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.3)",display:"flex",gap:12,alignItems:"center",animation:"recordPulse 1s infinite" }}>
+            <div style={{ width:10,height:10,borderRadius:"50%",background:C.red,flexShrink:0 }}/>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:11,color:C.red,marginBottom:4 }}>Recording… {secs}s / 8s</div>
+              <div style={{ height:4,borderRadius:2,background:"rgba(239,68,68,.2)" }}><div style={{ height:"100%",borderRadius:2,background:C.red,width:`${(secs/8)*100}%`,transition:"width 1s linear" }}/></div>
+            </div>
+          </div>:
+          <div style={{ padding:14,borderRadius:12,background:C.bg2,border:`1px solid ${C.border}` }}>
+            {editing?
+              <textarea value={transcript} onChange={e=>setTranscript(e.target.value)} style={{ width:"100%",background:"transparent",border:"none",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none",resize:"none",lineHeight:1.7 }} rows={3}/>:
+              <p style={{ fontSize:11,color:C.text,lineHeight:1.7,margin:0 }}>{transcript}</p>
+            }
+            <div style={{ display:"flex",gap:8,marginTop:10 }}>
+              <button className="btn" onClick={()=>setEditing(!editing)} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase",display:"flex",gap:6,alignItems:"center" }}>{Ico.edit}{editing?"Done":"Edit"}</button>
+              <button className="btn" onClick={()=>{setTranscript("");startRec();}} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Re-record</button>
+            </div>
+          </div>
+        }
+      </div>
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label="Save Notes" onClick={()=>{setDone(true);setT("Notes saved to story ✓");}} done={done} doneLabel="Notes Saved"/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S15: Consent Review
+function S15() {
+  const [statuses, setStatuses] = useState({ Sarah:"Unknown", James:"Consented", Unkn1:"Unknown" });
+  const [toast, setT] = useState(null);
+  const [sheet, setSheet] = useState(null);
+  const people = [
+    { id:"Sarah", name:"Sarah M.", clips:3, avatar:"S" },
+    { id:"James", name:"James K.", clips:1, avatar:"J" },
+    { id:"Unkn1", name:"Unknown Person", clips:2, avatar:"?" },
+  ];
+  const statusColor = { Consented:C.green, Unknown:C.accent, Declined:C.red };
+  const request = (id)=>{ setStatuses(p=>({...p,[id]:"Pending"})); setT(`Consent request sent to ${id} ✓`); };
+  const blur   = (id)=>{ setStatuses(p=>({...p,[id]:"Blurred"})); setT(`${id} will be blurred in all clips`); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Consent Review" sub="Detected Participants" />
+      <p style={{ fontSize:10,color:C.muted,lineHeight:1.7,marginBottom:18 }}>These people were detected in your media. Handle each ethically before publishing.</p>
+      <div style={{ display:"flex",flexDirection:"column",gap:10,flex:1 }}>
+        {people.map(({id,name,clips,avatar})=>{
+          const st=statuses[id]; const col=statusColor[st]||C.muted;
+          return <div key={id} style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${st==="Consented"?"rgba(34,197,94,.2)":C.border}` }}>
+            <div style={{ display:"flex",gap:12,alignItems:"center",marginBottom:12 }}>
+              <div style={{ width:40,height:40,borderRadius:"50%",background:C.bg3,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,color:C.muted }}>{avatar}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12,color:C.text,marginBottom:3 }}>{name}</div>
+                <div style={{ fontSize:10,color:C.muted }}>{clips} clip{clips!==1?"s":""} detected</div>
+              </div>
+              <div style={{ padding:"4px 10px",borderRadius:999,background:`rgba(${hexToRgb(col)},.12)`,border:`1px solid rgba(${hexToRgb(col)},.3)` }}>
+                <span style={{ fontSize:9,color:col,letterSpacing:".8px",textTransform:"uppercase" }}>{st}</span>
+              </div>
+            </div>
+            {(st==="Unknown"||st==="Pending")&&<div style={{ display:"flex",gap:8 }}>
+              <button className="btn" onClick={()=>request(id)} style={{ flex:1,padding:"9px",borderRadius:10,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>{st==="Pending"?"Resend Request":"Request Consent"}</button>
+              <button className="btn" onClick={()=>blur(id)} style={{ flex:1,padding:"9px",borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Apply Blur</button>
+            </div>}
+            {st==="Blurred"&&<div style={{ fontSize:10,color:C.muted,padding:"8px 0 0",borderTop:`1px solid ${C.border}` }}>🔒 Face blurred in all {clips} clip{clips!==1?"s":""}</div>}
+          </div>;
+        })}
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S16: Consent Requests Status
+function S16() {
+  const [reqs, setReqs] = useState([
+    { id:1, name:"Sarah M.", status:"Pending", clips:["Morning Walk","Temple Scene"], time:"Sent 2h ago" },
+    { id:2, name:"Hana K.",  status:"Declined", clips:["Ramen Shop"], time:"Declined 1h ago" },
+    { id:3, name:"Taro N.",  status:"Approved", clips:["River Crossing","Street View"], time:"Approved just now" },
+  ]);
+  const [toast, setT] = useState(null);
+  const cancel = (id)=>{ setReqs(p=>p.filter(r=>r.id!==id)); setT("Request cancelled"); };
+  const resend = (id)=>{ setT("Request resent ✓"); };
+  const stCol = { Pending:C.accent, Declined:C.red, Approved:C.green };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Consent Requests" sub="Status Tracker" />
+      <div style={{ display:"flex",flexDirection:"column",gap:10,flex:1 }}>
+        {reqs.map(({id,name,status,clips,time})=>{
+          const col=stCol[status];
+          return <div key={id} style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:13,color:C.text,marginBottom:3 }}>{name}</div>
+                <div style={{ fontSize:9,color:C.dim }}>{time}</div>
+              </div>
+              <div style={{ padding:"4px 10px",borderRadius:999,background:`rgba(${hexToRgb(col)},.12)`,border:`1px solid rgba(${hexToRgb(col)},.3)` }}>
+                <span style={{ fontSize:9,color:col,letterSpacing:".8px",textTransform:"uppercase" }}>{status}</span>
+              </div>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              {clips.map(c=><span key={c} style={{ display:"inline-block",padding:"3px 10px",borderRadius:999,background:status==="Declined"?"rgba(239,68,68,.08)":"rgba(255,255,255,.05)",border:`1px solid ${status==="Declined"?"rgba(239,68,68,.2)":C.border}`,fontSize:9,color:status==="Declined"?C.red:C.muted,marginRight:6,marginBottom:4,textDecoration:status==="Declined"?"line-through":"none" }}>{c}</span>)}
+            </div>
+            {status==="Pending"&&<div style={{ display:"flex",gap:8 }}>
+              <button className="btn" onClick={()=>resend(id)} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Resend</button>
+              <button className="btn" onClick={()=>cancel(id)} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Cancel</button>
+            </div>}
+            {status==="Declined"&&<button className="btn" onClick={()=>setT("Blur applied to declined clips ✓")} style={{ width:"100%",padding:9,borderRadius:10,border:"1px solid rgba(239,68,68,.3)",background:"rgba(239,68,68,.08)",color:C.red,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Apply Blur to Declined Clips</button>}
+            {status==="Approved"&&<div style={{ fontSize:10,color:C.green,display:"flex",gap:6,alignItems:"center" }}><span style={{ animation:"checkPop .3s ease" }}>✓</span> All clips cleared for use</div>}
+          </div>;
+        })}
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S17: Arrange Beats (Timeline)
+function S17() {
+  const [beats, setBeats] = useState([
+    { id:1, e:"⛩", title:"Temple at Dawn", dur:"0:14" },
+    { id:2, e:"🌸", title:"Cherry Blossom Path", dur:"0:22" },
+    { id:3, e:"🍣", title:"Ramen Shop Discovery", dur:"0:18" },
+    { id:4, e:"🌙", title:"Night Market", dur:"0:31" },
+    { id:5, e:"🚢", title:"River Crossing", dur:"0:11" },
+  ]);
+  const [dragging, setDragging] = useState(null);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const moveUp = (i)=>{ if(i===0) return; const b=[...beats]; [b[i-1],b[i]]=[b[i],b[i-1]]; setBeats(b); setT("Beat moved up"); };
+  const moveDown = (i)=>{ if(i===beats.length-1) return; const b=[...beats]; [b[i],b[i+1]]=[b[i+1],b[i]]; setBeats(b); setT("Beat moved down"); };
+  const merge = (i)=>{ if(i===beats.length-1) return; const b=[...beats]; b[i]={...b[i],title:`${b[i].title} + ${b[i+1].title}`}; b.splice(i+1,1); setBeats(b); setT("Beats merged ✓"); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans }}>
+      <SectionHeader label="Arrange Beats" sub="Shape your narrative" />
+      <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8 }}>
+        {beats.map(({id,e,title,dur},i)=><div key={id} style={{ padding:14,borderRadius:14,background:dragging===id?C.accentDim:C.bg2,border:`1px solid ${dragging===id?C.borderLit:C.border}`,display:"flex",gap:10,alignItems:"center",transition:"all .2s" }}>
+          <div style={{ cursor:"grab",color:C.dim,flexShrink:0 }}>{Ico.drag}</div>
+          <div style={{ width:36,height:36,borderRadius:10,background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{e}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:12,color:C.text,marginBottom:2 }}>{title}</div>
+            <div style={{ fontSize:10,color:C.muted }}>{dur} · Beat {i+1}</div>
+          </div>
+          <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
+            <button onClick={()=>moveUp(i)} className="btn" style={{ background:C.bg3,border:"none",borderRadius:6,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",color:i===0?C.dim:C.muted,fontSize:10 }}>↑</button>
+            <button onClick={()=>moveDown(i)} className="btn" style={{ background:C.bg3,border:"none",borderRadius:6,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",color:i===beats.length-1?C.dim:C.muted,fontSize:10 }}>↓</button>
+          </div>
+          <button onClick={()=>merge(i)} className="btn" style={{ padding:"4px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontFamily:C.fontSans,fontSize:8,letterSpacing:".5px",textTransform:"uppercase",opacity:i===beats.length-1?.3:1 }}>Merge↓</button>
+        </div>)}
+      </div>
+      <div style={{ paddingTop:14 }}>
+        <PrimaryBtn label={`Confirm ${beats.length} Beats`} onClick={()=>{setDone(true);setT("Beat order saved ✓");}} done={done} doneLabel="Order Saved"/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S18: Narration Voice Select
+function S18() {
+  const [voice, setVoice] = useState("neutral");
+  const [playing, setPlaying] = useState(null);
+  const [volume, setVolume] = useState(80);
+  const [speed, setSpeed] = useState(1);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const voices = [
+    { id:"mine",    label:"My Voice (Consented)", desc:"Your cloned voice from the setup sample.", badge:"Personal", avail:true },
+    { id:"neutral", label:"Neutral TTS",           desc:"A clean, natural-sounding AI narrator.", badge:"Default", avail:true },
+    { id:"warmth",  label:"Warm Storyteller",      desc:"A rich, cinematic narrative voice.",     badge:"Premium", avail:false },
+  ];
+  const preview = (id)=>{ setPlaying(id); setT(`Playing preview: ${id}`); setTimeout(()=>setPlaying(null),2000); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:14 }}>
+      <SectionHeader label="Narration Voice" sub="Choose your storyteller" />
+      <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+        {voices.map(v=>{
+          const sel=voice===v.id;
+          return <div key={v.id} className="card" onClick={()=>v.avail&&(setVoice(v.id),setT(`${v.label} selected ✓`))} style={{ padding:16,borderRadius:16,border:`1px solid ${sel?C.accent:C.border}`,background:sel?C.accentDim:C.bg2,opacity:v.avail?1:.5,transition:"all .2s" }}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6 }}>
+              <div style={{ fontSize:13,color:sel?C.text:C.muted }}>{v.label}</div>
+              <span style={{ fontSize:8,padding:"3px 8px",borderRadius:999,background:v.badge==="Premium"?"rgba(245,158,11,.15)":sel?"rgba(255,92,40,.2)":C.bg3,color:v.badge==="Premium"?"#f59e0b":sel?C.accent:C.dim,letterSpacing:".8px",textTransform:"uppercase" }}>{v.badge}</span>
+            </div>
+            <div style={{ fontSize:10,color:C.muted,lineHeight:1.5,marginBottom:10 }}>{v.desc}</div>
+            <button onClick={e=>{e.stopPropagation();v.avail&&preview(v.id);}} className="btn" style={{ display:"flex",gap:8,alignItems:"center",padding:"8px 12px",borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:playing===v.id?C.accent:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>
+              {playing===v.id?<div style={{ width:10,height:10,borderRadius:"50%",border:`2px solid ${C.accent}`,borderTopColor:"transparent",animation:"spin .7s linear infinite" }}/>:Ico.play}
+              {playing===v.id?"Playing…":"Preview"}
+            </button>
+          </div>;
+        })}
+      </div>
+      {/* Controls */}
+      <div style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${C.border}` }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:12 }}>Playback Controls</div>
+        {[{label:"Volume",val:volume,set:setVolume,min:0,max:100,unit:"%"},{label:"Speed",val:speed*100,set:(v)=>setSpeed(v/100),min:50,max:200,unit:"x",display:(v)=>`${v/100}x`}].map(({label,val,set,min,max,unit,display})=>
+          <div key={label} style={{ marginBottom:12 }}>
+            <div style={{ display:"flex",justifyContent:"space-between",marginBottom:6 }}>
+              <span style={{ fontSize:10,color:C.muted }}>{label}</span>
+              <span style={{ fontSize:10,color:C.accent }}>{display?display(val):`${val}${unit}`}</span>
+            </div>
+            <input type="range" min={min} max={max} value={val} onChange={e=>set(Number(e.target.value))} style={{ width:"100%",accentColor:C.accent }}/>
+          </div>
+        )}
+      </div>
+      <PrimaryBtn label="Save Voice" onClick={()=>{setDone(true);setT("Voice preference saved ✓");}} done={done} doneLabel="Saved"/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S19: Music & Pacing
+function S19() {
+  const [track, setTrack] = useState(null);
+  const [tempo, setTempo] = useState(65);
+  const [locked, setLocked] = useState(false);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const tracks = [
+    { id:"ambient", label:"Kyoto Morning", genre:"Ambient / Lo-fi", dur:"3:24" },
+    { id:"piano",   label:"Quiet Reflection", genre:"Piano / Cinematic", dur:"4:12" },
+    { id:"folk",    label:"Paper Lanterns", genre:"Folk / Acoustic", dur:"2:58" },
+    { id:"none",    label:"No Music", genre:"Story audio only", dur:"—" },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:14 }}>
+      <SectionHeader label="Music & Pacing" sub="Set the mood" />
+      <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+        {tracks.map(t=>{
+          const sel=track===t.id;
+          return <div key={t.id} className="card" onClick={()=>{setTrack(t.id);setT(`${t.label} selected ✓`);}} style={{ padding:"14px 16px",borderRadius:14,border:`1px solid ${sel?C.accent:C.border}`,background:sel?C.accentDim:C.bg2,display:"flex",alignItems:"center",gap:12,transition:"all .2s" }}>
+            <div style={{ width:36,height:36,borderRadius:10,background:sel?"rgba(255,92,40,.25)":C.bg3,display:"flex",alignItems:"center",justifyContent:"center",color:sel?C.accent:C.muted,flexShrink:0 }}>{Ico.music}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12,color:sel?C.text:C.muted,marginBottom:2 }}>{t.label}</div>
+              <div style={{ fontSize:10,color:C.dim }}>{t.genre} · {t.dur}</div>
+            </div>
+            {sel&&<span style={{ color:C.accent,animation:"checkPop .2s ease" }}>{Ico.check}</span>}
+          </div>;
+        })}
+      </div>
+      <div style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10 }}>
+          <span style={{ fontSize:10,color:C.muted }}>Tempo</span>
+          <span style={{ fontSize:10,color:C.accent }}>{tempo} BPM</span>
+        </div>
+        <input type="range" min={40} max={140} value={tempo} onChange={e=>setTempo(Number(e.target.value))} style={{ width:"100%",accentColor:C.accent,marginBottom:14 }}/>
+        <div className="card" onClick={()=>{setLocked(!locked);setT(locked?"Duration lock removed":"Story duration locked to fit scene count ✓");}} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:12,border:`1px solid ${locked?C.borderLit:C.border}`,background:locked?C.accentDim:"transparent",transition:"all .2s" }}>
+          <div style={{ fontSize:11,color:locked?C.text:C.muted }}>Lock duration to scene count</div>
+          <Toggle on={locked} onChange={e=>{e.stopPropagation();setLocked(!locked);setT(locked?"Duration lock removed":"Duration locked ✓");}}/>
+        </div>
+      </div>
+      <PrimaryBtn label="Save Music & Pacing" onClick={()=>{setDone(true);setT("Music settings saved ✓");}} done={done} doneLabel="Saved"/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S20: Preview
+function S20() {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [toast, setT] = useState(null);
+  const [shared, setShared] = useState(false);
+  const [notes, setNotes] = useState("");
+  const timer = useRef(null);
+  const beats = [
+    { e:"⛩", title:"Temple at Dawn", wm:false },
+    { e:"🌸", title:"Cherry Blossom Path", wm:true },
+    { e:"🍣", title:"Ramen Shop", wm:false },
+    { e:"🌙", title:"Night Market", wm:true },
+  ];
+  const togglePlay = () => {
+    if(playing){ clearInterval(timer.current); setPlaying(false); return; }
+    setPlaying(true);
+    timer.current = setInterval(()=>setProgress(p=>{ if(p>=100){ clearInterval(timer.current); setPlaying(false); return 0; } return p+1; }),80);
+  };
+  useEffect(()=>()=>clearInterval(timer.current),[]);
+  const beatIdx = Math.floor((progress/100)*beats.length);
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,gap:12 }}>
+      <SectionHeader label="Preview" sub="Final check" />
+      {/* Player */}
+      <div style={{ borderRadius:16,background:C.bg2,border:`1px solid ${C.border}`,padding:16 }}>
+        <div style={{ height:100,borderRadius:12,background:"#0d1826",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden" }}>
+          <span style={{ fontSize:40,transition:"transform .3s",transform:playing?"scale(1.1)":"scale(1)" }}>{beats[Math.min(beatIdx,beats.length-1)].e}</span>
+          <div style={{ position:"absolute",inset:0,background:"linear-gradient(180deg,transparent 40%,rgba(13,24,38,.8) 100%)" }}/>
+          <div style={{ position:"absolute",top:8,right:8 }}>
+            {beats[Math.min(beatIdx,beats.length-1)].wm&&<div style={{ display:"flex",gap:4,alignItems:"center",background:"rgba(255,92,40,.2)",border:`1px solid ${C.borderLit}`,borderRadius:999,padding:"4px 10px" }}>
+              {Ico.wm}<span style={{ fontSize:9,color:C.accent,letterSpacing:".8px",textTransform:"uppercase" }}>AI Enhanced</span>
+            </div>}
+          </div>
+          <div style={{ position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",fontFamily:C.fontSerif,fontSize:12,color:"rgba(255,255,255,.7)" }}>{beats[Math.min(beatIdx,beats.length-1)].title}</div>
+        </div>
+        {/* Progress */}
+        <div style={{ height:4,borderRadius:2,background:C.bg3,marginBottom:12,overflow:"hidden" }}>
+          <div style={{ height:"100%",borderRadius:2,background:C.accent,width:`${progress}%`,transition:"width .08s linear" }}/>
+        </div>
+        {/* Beat markers */}
+        <div style={{ display:"flex",gap:6,marginBottom:14 }}>
+          {beats.map((b,i)=><div key={i} className="card" onClick={()=>{setProgress((i/beats.length)*100);setT(`Jumped to: ${b.title}`);}} style={{ flex:1,padding:"8px",borderRadius:10,background:beatIdx===i?"rgba(255,92,40,.15)":C.bg3,border:`1px solid ${beatIdx===i?C.borderLit:"transparent"}`,textAlign:"center",transition:"all .2s",position:"relative" }}>
+            <div style={{ fontSize:14 }}>{b.e}</div>
+            {b.wm&&<div style={{ position:"absolute",top:2,right:2,width:6,height:6,borderRadius:"50%",background:C.accent }}/>}
+          </div>)}
+        </div>
+        <div style={{ display:"flex",gap:8 }}>
+          <button className="btn" onClick={()=>{setProgress(0);setPlaying(false);clearInterval(timer.current);}} style={{ padding:"10px 14px",borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>↺ Restart</button>
+          <button className="btn" onClick={togglePlay} style={{ flex:1,padding:10,borderRadius:10,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",display:"flex",gap:8,alignItems:"center",justifyContent:"center" }}>
+            {playing?Ico.pause:Ico.play}{playing?"Pause":"Play Preview"}
+          </button>
+        </div>
+      </div>
+      {/* Notes */}
+      <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Final notes before export…" style={{ background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none",resize:"none",height:64,lineHeight:1.6 }}/>
+      {/* Legend */}
+      <div style={{ display:"flex",gap:8,alignItems:"center",padding:"10px 14px",borderRadius:12,background:C.accentDim,border:`1px solid ${C.borderLit}` }}>
+        {Ico.wm}<span style={{ fontSize:10,color:C.accent,lineHeight:1.5 }}>Orange dot = AI-enhanced beat. Amber watermark visible on playback.</span>
+      </div>
+      <div style={{ display:"flex",gap:10 }}>
+        <button className="btn" onClick={()=>setT("Navigated back to Arrange Beats")} style={{ flex:1,padding:13,borderRadius:12,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>← Back</button>
+        <button className="btn" onClick={()=>{setShared(true);setT("Story exported and ready to share ✓");}} style={{ flex:2,padding:13,borderRadius:12,border:"none",background:shared?C.green:C.accent,color:shared?"#fff":"#000",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",boxShadow:shared?"0 0 18px rgba(34,197,94,.35)":"0 0 18px rgba(255,92,40,.3)",display:"flex",gap:8,alignItems:"center",justifyContent:"center" }}>
+          {shared?"✓ Exported":Ico.export}{shared?"Exported":"Export / Share"}
+        </button>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION D: CHAPTERS ────────────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S21: New Chapter
+function S21() {
+  const [title, setTitle] = useState("");
+  const [priv, setPriv] = useState("Family");
+  const [cover, setCover] = useState(null);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const covers = ["🌿","🌊","🏔","🌆","🎉","🏠","🎓","💼"];
+  const privs = [
+    { id:"Private", desc:"Only you", col:"#ef4444" },
+    { id:"Family",  desc:"Family members only", col:C.accent },
+    { id:"Circle",  desc:"Close friends & family", col:C.blue },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:16 }}>
+      <SectionHeader label="New Chapter" sub="Collaborative container" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Chapter Name</div>
+        <Input placeholder="e.g. Family Reunion 2024…" value={title} onChange={e=>setTitle(e.target.value)}/>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Cover</div>
+        <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
+          {covers.map(c=><button key={c} className="btn" onClick={()=>{setCover(c);setT(`Cover set to ${c}`);}} style={{ width:46,height:46,borderRadius:12,border:`1px solid ${cover===c?C.borderLit:C.border}`,background:cover===c?C.accentDim:C.bg2,fontSize:22,transition:"all .2s" }}>{c}</button>)}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Privacy</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {privs.map(p=><div key={p.id} className="card" onClick={()=>{setPriv(p.id);setT(`${p.id} privacy set ✓`);}} style={{ padding:"13px 16px",borderRadius:14,border:`1px solid ${priv===p.id?p.col:C.border}`,background:priv===p.id?`rgba(${hexToRgb(p.col)},.12)`:"transparent",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .2s" }}>
+            <div>
+              <div style={{ fontSize:12,color:priv===p.id?C.text:C.muted }}>{p.id}</div>
+              <div style={{ fontSize:10,color:C.dim,marginTop:2 }}>{p.desc}</div>
+            </div>
+            {priv===p.id&&<span style={{ color:p.col,animation:"checkPop .2s ease" }}>{Ico.check}</span>}
+          </div>)}
+        </div>
+      </div>
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label="Create Chapter" onClick={()=>{if(title){setDone(true);setT("Chapter created ✓");}else setT("Add a chapter name first");}} done={done} doneLabel="Chapter Created"/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S22: Invite Contributors
+function S22() {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("View");
+  const [invites, setInvites] = useState([
+    { email:"sarah@example.com", role:"Add Media" },
+  ]);
+  const [toast, setT] = useState(null);
+  const roles = ["View","Comment","Add Media"];
+  const roleMeta = { "View":"Can view all content","Comment":"Can view and comment","Add Media":"Can contribute new media" };
+  const send = () => {
+    if(!email.includes("@")){ setT("Enter a valid email address"); return; }
+    if(invites.some(i=>i.email===email)){ setT("Already invited"); return; }
+    setInvites(p=>[...p,{email,role}]); setT(`Invite sent to ${email} ✓`); setEmail("");
+  };
+  const remove = (em) => { setInvites(p=>p.filter(i=>i.email!==em)); setT("Invite removed"); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:14 }}>
+      <SectionHeader label="Invite Contributors" sub="Add collaborators" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Email or Link</div>
+        <div style={{ display:"flex",gap:8,marginBottom:12 }}>
+          <input value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="contributor@example.com" style={{ flex:1,background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:12,outline:"none" }}/>
+          <button className="btn" onClick={send} style={{ padding:"12px 16px",borderRadius:12,border:"none",background:C.accent,color:"#000",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>Invite</button>
+        </div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Role</div>
+        <div style={{ display:"flex",gap:8 }}>
+          {roles.map(r=><Chip key={r} label={r} active={role===r} onClick={()=>{setRole(r);setT(`Role set to: ${r}`);}}/>)}
+        </div>
+        <div style={{ fontSize:10,color:C.muted,marginTop:8,padding:"10px 12px",borderRadius:10,background:C.bg2,border:`1px solid ${C.border}` }}>{roleMeta[role]}</div>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Pending Invites ({invites.length})</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {invites.map(({email,role})=><div key={email} style={{ padding:"12px 14px",borderRadius:12,background:C.bg2,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <div>
+              <div style={{ fontSize:12,color:C.text,marginBottom:2 }}>{email}</div>
+              <div style={{ fontSize:10,color:C.muted }}>{role}</div>
+            </div>
+            <button className="btn" onClick={()=>remove(email)} style={{ background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:8,color:C.red,fontFamily:C.fontSans,fontSize:9,padding:"5px 10px",textTransform:"uppercase",letterSpacing:".5px" }}>Remove</button>
+          </div>)}
+          {invites.length===0&&<div style={{ fontSize:11,color:C.dim,textAlign:"center",padding:"24px 0" }}>No invites yet</div>}
+        </div>
+      </div>
+      <div style={{ marginTop:"auto" }}>
+        <button className="btn" onClick={()=>setT("Share link copied to clipboard ✓")} style={{ width:"100%",padding:13,borderRadius:12,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>📋 Copy Invite Link</button>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S23: Chapter Feed
+function S23() {
+  const [filter, setFilter] = useState("All");
+  const [toast, setT] = useState(null);
+  const [fab, setFab] = useState(false);
+  const posts = [
+    { author:"Sarah", time:"2h ago", media:"🌅", note:"Morning view from the cabin porch — absolute silence.", place:"Lake House", liked:false },
+    { author:"You",   time:"5h ago", media:"🍕", note:"Dinner together after 3 years. Perfect.", place:"Mario's Kitchen", liked:true },
+    { author:"Dad",   time:"1d ago", media:"🎂", note:"Happy birthday to me! Thank you all 🥹", place:"Home", liked:false },
+  ];
+  const [liked, setLiked] = useState(posts.map(p=>p.liked));
+  const filters = ["All","Media","Notes","Places"];
+  const fabActs = [{ e:"📷", label:"Add Photo" },{ e:"🎙", label:"Add Audio" },{ e:"✍️", label:"Add Note" }];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 0 80px",display:"flex",flexDirection:"column",fontFamily:C.fontSans }}>
+      <div style={{ padding:"0 22px",marginBottom:16 }}>
+        <SectionHeader label="Chapter Feed" sub="Threaded contributions" />
+        <div style={{ display:"flex",gap:8,overflowX:"auto" }}>
+          {filters.map(f=><Chip key={f} label={f} active={filter===f} onClick={()=>setFilter(f)}/>)}
+        </div>
+      </div>
+      <div style={{ flex:1,overflowY:"auto",padding:"0 22px" }}>
+        {posts.map(({author,time,media,note,place},i)=><div key={i} style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${C.border}`,marginBottom:12 }}>
+          <div style={{ display:"flex",gap:10,alignItems:"center",marginBottom:12 }}>
+            <div style={{ width:32,height:32,borderRadius:"50%",background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.muted,flexShrink:0 }}>{author[0]}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12,color:C.text }}>{author}</div>
+              <div style={{ fontSize:9,color:C.dim }}>{time}</div>
+            </div>
+          </div>
+          <div style={{ height:80,borderRadius:12,background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,marginBottom:10 }}>{media}</div>
+          <p style={{ fontSize:11,color:C.muted,lineHeight:1.7,marginBottom:10 }}>{note}</p>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+            <div style={{ display:"flex",gap:4,alignItems:"center",fontSize:10,color:C.dim }}>{Ico.pin}<span>{place}</span></div>
+            <div style={{ display:"flex",gap:8 }}>
+              <button className="btn" onClick={()=>setT("Replied to post")} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,textTransform:"uppercase",letterSpacing:".5px" }}>Reply</button>
+              <button className="btn" onClick={()=>{const n=[...liked];n[i]=!n[i];setLiked(n);setT(n[i]?"❤ Liked":"Unliked");}} style={{ padding:"6px 12px",borderRadius:8,border:`1px solid ${liked[i]?"rgba(239,68,68,.3)":C.border}`,background:liked[i]?"rgba(239,68,68,.1)":"transparent",color:liked[i]?C.red:C.muted,fontFamily:C.fontSans,fontSize:9,textTransform:"uppercase",letterSpacing:".5px" }}>{liked[i]?"❤":"♡"}</button>
+            </div>
+          </div>
+        </div>)}
+      </div>
+      <div style={{ position:"absolute",bottom:32,right:22,zIndex:60 }}>
+        {fab&&<div style={{ position:"absolute",bottom:60,right:0,display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",animation:"slideUp .2s ease" }}>
+          {fabActs.map(({e,label})=><button key={label} className="btn" onClick={()=>{setT(`Adding: ${label}`);setFab(false);}} style={{ display:"flex",gap:9,alignItems:"center",background:C.bg2,border:`1px solid ${C.border}`,borderRadius:99,padding:"9px 14px 9px 10px",fontFamily:C.fontSans,fontSize:10,color:C.text,whiteSpace:"nowrap",boxShadow:"0 10px 28px rgba(0,0,0,.45)" }}><span style={{ fontSize:14 }}>{e}</span>{label}</button>)}
+        </div>}
+        <button className="btn" onClick={()=>setFab(!fab)} style={{ width:52,height:52,borderRadius:"50%",background:fab?"#c44624":C.accent,border:"none",boxShadow:`0 0 22px rgba(255,92,40,.5)`,display:"flex",alignItems:"center",justifyContent:"center",color:"#000",transform:fab?"rotate(45deg)":"rotate(0deg)",transition:"all .28s cubic-bezier(.34,1.56,.64,1)" }}>{Ico.plus}</button>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S24: Review & Resolve
+function S24() {
+  const [items, setItems] = useState([
+    { id:1, author:"Sarah", comment:"Can we blur the background of the second shot? My neighbor is visible.", resolved:false, suggestion:"blur" },
+    { id:2, author:"Dad",   comment:"Love the caption on the birthday photo! Maybe add the date?", resolved:false, suggestion:"caption" },
+    { id:3, author:"Hana",  comment:"I'd prefer my voice not be in the audio clip at 1:24.", resolved:true, suggestion:"mute" },
+  ]);
+  const [toast, setT] = useState(null);
+  const resolve = (id) => { setItems(p=>p.map(it=>it.id===id?{...it,resolved:true}:it)); setT("Marked as resolved ✓"); };
+  const apply = (id,sug) => { setT(`${sug} applied ✓`); resolve(id); };
+  const sugColor = { blur:C.blue, caption:C.green, mute:C.accent };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto" }}>
+      <SectionHeader label="Review & Resolve" sub={`${items.filter(i=>!i.resolved).length} open · ${items.filter(i=>i.resolved).length} resolved`} />
+      <div style={{ display:"flex",flexDirection:"column",gap:10,flex:1 }}>
+        {items.map(({id,author,comment,resolved,suggestion})=><div key={id} style={{ padding:16,borderRadius:16,background:resolved?"rgba(34,197,94,.04)":C.bg2,border:`1px solid ${resolved?"rgba(34,197,94,.15)":C.border}`,opacity:resolved?.7:1,transition:"all .25s" }}>
+          <div style={{ display:"flex",gap:10,alignItems:"flex-start",marginBottom:10 }}>
+            <div style={{ width:30,height:30,borderRadius:"50%",background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:C.muted,flexShrink:0 }}>{author[0]}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:11,color:C.text,fontWeight:500,marginBottom:2 }}>{author}</div>
+              <p style={{ fontSize:11,color:C.muted,lineHeight:1.7 }}>{comment}</p>
+            </div>
+          </div>
+          <div style={{ display:"flex",gap:8 }}>
+            <span style={{ padding:"3px 10px",borderRadius:999,background:`rgba(${hexToRgb(sugColor[suggestion])},.1)`,border:`1px solid rgba(${hexToRgb(sugColor[suggestion])},.2)`,fontSize:8,color:sugColor[suggestion],letterSpacing:".8px",textTransform:"uppercase" }}>Suggestion: {suggestion}</span>
+          </div>
+          {!resolved&&<div style={{ display:"flex",gap:8,marginTop:12 }}>
+            <button className="btn" onClick={()=>apply(id,suggestion)} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:9,letterSpacing:".5px",textTransform:"uppercase" }}>Apply {suggestion}</button>
+            <button className="btn" onClick={()=>resolve(id)} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".5px",textTransform:"uppercase" }}>Mark Resolved</button>
+          </div>}
+          {resolved&&<div style={{ fontSize:10,color:C.green,marginTop:8,display:"flex",gap:6,alignItems:"center" }}><span>✓</span> Resolved</div>}
+        </div>)}
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S25: Publish Chapter
+function S25() {
+  const [notes, setNotes] = useState("");
+  const [published, setPublished] = useState(false);
+  const [toast, setT] = useState(null);
+  const [histOpen, setHistOpen] = useState(false);
+  const contributors = [
+    { name:"You (Author)", role:"Add Media", avatar:"Y" },
+    { name:"Sarah M.",     role:"Add Media", avatar:"S" },
+    { name:"Dad",          role:"View",      avatar:"D" },
+  ];
+  const history = [
+    { ver:"v0.2", date:"Today 14:32", note:"Applied blur to background" },
+    { ver:"v0.1", date:"Yesterday",   note:"Initial draft with 5 beats" },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:14 }}>
+      <SectionHeader label="Publish Chapter" sub="Lock a shared version" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>Version Notes</div>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What changed in this version?" style={{ width:"100%",background:C.bg2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontFamily:C.fontSans,fontSize:11,outline:"none",resize:"none",height:80,lineHeight:1.6 }}/>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Contributors</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {contributors.map(({name,role,avatar})=><div key={name} style={{ display:"flex",gap:10,alignItems:"center",padding:"10px 14px",borderRadius:12,background:C.bg2,border:`1px solid ${C.border}` }}>
+            <div style={{ width:32,height:32,borderRadius:"50%",background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:C.muted,flexShrink:0 }}>{avatar}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12,color:C.text }}>{name}</div>
+              <div style={{ fontSize:9,color:C.dim }}>{role}</div>
+            </div>
+          </div>)}
+        </div>
+      </div>
+      <div style={{ padding:14,borderRadius:14,background:C.bg2,border:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:histOpen?12:0 }}>
+          <div style={{ fontSize:11,color:C.muted }}>Version history · {history.length} versions</div>
+          <button className="btn" onClick={()=>setHistOpen(!histOpen)} style={{ background:"none",border:"none",color:C.muted,fontFamily:C.fontSans,fontSize:9,textTransform:"uppercase",letterSpacing:".8px",textDecoration:"underline",cursor:"pointer" }}>View history</button>
+        </div>
+        {histOpen&&<div style={{ display:"flex",flexDirection:"column",gap:6,animation:"fadeUp .2s ease" }}>
+          {history.map(({ver,date,note})=><div key={ver} style={{ padding:"10px 12px",borderRadius:10,background:C.bg3,border:`1px solid ${C.border}` }}>
+            <div style={{ display:"flex",justifyContent:"space-between",marginBottom:4 }}>
+              <span style={{ fontSize:10,color:C.accent }}>{ver}</span>
+              <span style={{ fontSize:9,color:C.dim }}>{date}</span>
+            </div>
+            <div style={{ fontSize:10,color:C.muted }}>{note}</div>
+          </div>)}
+        </div>}
+      </div>
+      <PrimaryBtn label="Publish Chapter" onClick={()=>{setPublished(true);setT("Chapter published ✓ Contributors notified");}} done={published} doneLabel="Published ✓"/>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION E: LIFE WRAPPED ────────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S26: New Wrap
+function S26() {
+  const [period, setPeriod] = useState("Year");
+  const [sources, setSources] = useState([]);
+  const [done, setDone] = useState(false);
+  const [toast, setT] = useState(null);
+  const periods = ["Year","Season","Custom"];
+  const srcList = [
+    { id:"s1", type:"Story", label:"Kyoto Trip" },
+    { id:"s2", type:"Story", label:"Summer Wedding" },
+    { id:"c1", type:"Chapter", label:"Family Reunion" },
+    { id:"c2", type:"Chapter", label:"Dad's 60th" },
+    { id:"s3", type:"Story", label:"Morning Routines" },
+  ];
+  const togSrc = (id)=>{ setSources(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:16 }}>
+      <SectionHeader label="New Wrap" sub="Define your recap" />
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Period</div>
+        <div style={{ display:"flex",gap:8 }}>
+          {periods.map(p=><Chip key={p} label={p} active={period===p} onClick={()=>{setPeriod(p);setT(`Period set to: ${p}`);}} color="#f59e0b"/>)}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Select Sources ({sources.length} selected)</div>
+        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+          {srcList.map(({id,type,label})=>{
+            const sel=sources.includes(id);
+            return <div key={id} className="card" onClick={()=>{togSrc(id);}} style={{ padding:"12px 14px",borderRadius:12,border:`1px solid ${sel?"rgba(245,158,11,.5)":C.border}`,background:sel?"rgba(245,158,11,.1)":C.bg2,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .2s" }}>
+              <div style={{ display:"flex",gap:10,alignItems:"center" }}>
+                <span style={{ fontSize:9,padding:"3px 8px",borderRadius:999,background:type==="Story"?"rgba(59,130,246,.15)":"rgba(16,185,129,.15)",color:type==="Story"?C.blue:"#10b981",letterSpacing:".8px",textTransform:"uppercase" }}>{type}</span>
+                <span style={{ fontSize:12,color:sel?C.text:C.muted }}>{label}</span>
+              </div>
+              {sel&&<span style={{ color:"#f59e0b",animation:"checkPop .2s ease" }}>{Ico.check}</span>}
+            </div>;
+          })}
+        </div>
+      </div>
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label={sources.length?`Generate Wrap (${sources.length} sources)`:"Select sources to continue"} onClick={()=>{if(sources.length){setDone(true);setT("Wrap generation started ✓");}else setT("Select at least one source");}} done={done} doneLabel="Generating…" disabled={sources.length===0}/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S27: Theme Review & Mute/Snooze
+function S27() {
+  const [muted, setMuted] = useState([]);
+  const [toast, setT] = useState(null);
+  const clusters = [
+    { cat:"People", items:["Sarah","Dad","Old Colleagues","Childhood Friends"] },
+    { cat:"Places", items:["Tokyo","Hometown","Old Apartment","Work Office"] },
+    { cat:"Emotions", items:["Melancholy","Nostalgia","Joy","Uncertainty"] },
+  ];
+  const togMute = (item) => {
+    setMuted(p=>p.includes(item)?p.filter(x=>x!==item):[...p,item]);
+    setT(muted.includes(item)?`${item} unmuted`:`${item} muted — won't appear in this wrap`);
+  };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,overflowY:"auto",gap:16 }}>
+      <SectionHeader label="Theme Review" sub="Curate safely" />
+      <p style={{ fontSize:10,color:C.muted,lineHeight:1.7 }}>Tap any theme to mute it from this wrap. Muted themes are kept private and can be restored anytime.</p>
+      {clusters.map(({cat,items})=><div key={cat}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>{cat}</div>
+        <div style={{ display:"flex",flexWrap:"wrap",gap:8 }}>
+          {items.map(item=>{
+            const mute=muted.includes(item);
+            return <div key={item} className="btn" onClick={()=>togMute(item)} style={{ padding:"8px 14px",borderRadius:999,border:`1px solid ${mute?"rgba(239,68,68,.4)":C.border}`,background:mute?"rgba(239,68,68,.1)":C.bg2,color:mute?C.red:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:".5px",display:"flex",gap:6,alignItems:"center",transition:"all .2s" }}>
+              {mute&&<span style={{ fontSize:10 }}>✕</span>}
+              {mute?`Muted: ${item}`:item}
+            </div>;
+          })}
+        </div>
+      </div>)}
+      {muted.length>0&&<div style={{ padding:14,borderRadius:12,background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.15)",animation:"fadeUp .2s ease" }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:6 }}>Muted from this wrap</div>
+        <div style={{ fontSize:11,color:C.red,lineHeight:1.7 }}>{muted.join(", ")}</div>
+      </div>}
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label="Continue to Arrange" onClick={()=>setT("Theme selection saved ✓")}/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S28: Arrange & Export Wrap
+function S28() {
+  const [beats, setBeats] = useState([
+    { id:1, e:"🌸", cap:"Cherry Blossoms" },
+    { id:2, e:"🍣", cap:"Kyoto Ramen" },
+    { id:3, e:"🎂", cap:"Birthday" },
+    { id:4, e:"🌅", cap:"Sunrise Hike" },
+  ]);
+  const [aspect, setAspect] = useState("16:9");
+  const [exported, setExported] = useState(false);
+  const [toast, setT] = useState(null);
+  const moveUp = (i)=>{ if(!i) return; const b=[...beats]; [b[i-1],b[i]]=[b[i],b[i-1]]; setBeats(b); setT("Beat moved"); };
+  const moveDown=(i)=>{ if(i===beats.length-1) return; const b=[...beats]; [b[i],b[i+1]]=[b[i+1],b[i]]; setBeats(b); setT("Beat moved"); };
+  const updateCap=(i,v)=>{ const b=[...beats]; b[i]={...b[i],cap:v}; setBeats(b); };
+  return (
+    <div style={{ position:"absolute",inset:0,background:C.bg1,padding:"56px 22px 28px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,gap:14 }}>
+      <SectionHeader label="Arrange & Export" sub="Finalize your wrap" />
+      <div style={{ flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8 }}>
+        {beats.map(({id,e,cap},i)=><div key={id} style={{ padding:12,borderRadius:12,background:C.bg2,border:`1px solid ${C.border}`,display:"flex",gap:10,alignItems:"center" }}>
+          <div style={{ color:C.dim,cursor:"grab" }}>{Ico.drag}</div>
+          <div style={{ width:36,height:36,borderRadius:10,background:C.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{e}</div>
+          <input value={cap} onChange={e=>updateCap(i,e.target.value)} style={{ flex:1,background:"transparent",border:"none",color:C.text,fontFamily:C.fontSans,fontSize:12,outline:"none" }}/>
+          <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
+            <button onClick={()=>moveUp(i)} className="btn" style={{ background:C.bg3,border:"none",borderRadius:5,width:20,height:20,color:i===0?C.dim:C.muted,fontSize:10 }}>↑</button>
+            <button onClick={()=>moveDown(i)} className="btn" style={{ background:C.bg3,border:"none",borderRadius:5,width:20,height:20,color:i===beats.length-1?C.dim:C.muted,fontSize:10 }}>↓</button>
+          </div>
+        </div>)}
+      </div>
+      <div>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Aspect Ratio</div>
+        <div style={{ display:"flex",gap:8 }}>
+          {["16:9","9:16","1:1"].map(a=><Chip key={a} label={a} active={aspect===a} onClick={()=>{setAspect(a);setT(`Aspect ratio: ${a}`);}} color="#f59e0b"/>)}
+        </div>
+      </div>
+      <div style={{ display:"flex",gap:10 }}>
+        <button className="btn" onClick={()=>setT("Sharing options opened")} style={{ flex:1,padding:13,borderRadius:12,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",display:"flex",gap:6,alignItems:"center",justifyContent:"center" }}>{Ico.export}Share</button>
+        <button className="btn" onClick={()=>{setExported(true);setT("Wrap exported ✓");}} style={{ flex:2,padding:13,borderRadius:12,border:"none",background:exported?C.green:C.accent,color:exported?"#fff":"#000",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase",boxShadow:`0 0 18px rgba(${exported?"34,197,94":"255,92,40"},.3)`,transition:"all .3s" }}>{exported?"✓ Exported":"Export Wrap"}</button>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   ── SECTION F: VR MEMORY ROOM ─────────────────────────
+═══════════════════════════════════════════════════════ */
+
+// S29: VR Safety Gate
+function S29() {
+  const [intensity, setIntensity] = useState(50);
+  const [agreed, setAgreed] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [toast, setT] = useState(null);
+  const intLabel = intensity<33?"Gentle — minimal emotional triggers":intensity<66?"Moderate — some emotional content":"Full Immersion — all memories active";
+  const intColor = intensity<33?C.green:intensity<66?C.accent:C.red;
+  return (
+    <div style={{ position:"absolute",inset:0,background:"linear-gradient(185deg,#070b12 0%,#0a0c0f 100%)",padding:"56px 22px 32px",display:"flex",flexDirection:"column",fontFamily:C.fontSans,gap:16 }}>
+      <div style={{ display:"flex",gap:10,alignItems:"center",marginBottom:4 }}>
+        {Ico.vr}
+        <div>
+          <div style={{ fontFamily:C.fontSerif,fontSize:26,color:C.text }}>VR Memory Room</div>
+          <div style={{ fontSize:10,color:C.muted,letterSpacing:"1px",textTransform:"uppercase",marginTop:2 }}>Safety Gate</div>
+        </div>
+      </div>
+      {/* Advisory */}
+      <div style={{ padding:16,borderRadius:16,background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.2)" }}>
+        <div style={{ fontSize:9,color:C.blue,letterSpacing:"1px",textTransform:"uppercase",marginBottom:8 }}>⚠ Advisory</div>
+        <p style={{ fontSize:11,color:C.muted,lineHeight:1.8 }}>This experience may surface emotionally significant memories including people you've lost, important life events, and deeply personal moments. You may exit at any time using the button bound below.</p>
+      </div>
+      {/* Intensity */}
+      <div style={{ padding:16,borderRadius:16,background:C.bg2,border:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10 }}>
+          <span style={{ fontSize:10,color:C.muted }}>Emotional Intensity</span>
+          <span style={{ fontSize:10,color:intColor,transition:"color .3s" }}>{intensity}%</span>
+        </div>
+        <input type="range" min={0} max={100} value={intensity} onChange={e=>setIntensity(Number(e.target.value))} style={{ width:"100%",accentColor:intColor }}/>
+        <div style={{ fontSize:10,color:intColor,marginTop:8,transition:"color .3s" }}>{intLabel}</div>
+      </div>
+      {/* Exit bind */}
+      <div style={{ padding:14,borderRadius:14,background:C.bg2,border:`1px solid ${C.border}`,display:"flex",gap:12,alignItems:"center" }}>
+        <div style={{ width:36,height:36,borderRadius:10,background:"rgba(239,68,68,.15)",border:"1px solid rgba(239,68,68,.3)",display:"flex",alignItems:"center",justifyContent:"center",color:C.red,flexShrink:0,fontSize:16 }}>🚪</div>
+        <div>
+          <div style={{ fontSize:12,color:C.text,marginBottom:3 }}>Exit to Calm</div>
+          <div style={{ fontSize:10,color:C.muted }}>Bound to controller B button · available always</div>
+        </div>
+      </div>
+      {/* Agree */}
+      <div className="card" onClick={()=>{setAgreed(!agreed);setT(agreed?"Agreement removed":"Safety acknowledgement confirmed ✓");}} style={{ display:"flex",gap:12,alignItems:"flex-start",padding:"14px 16px",borderRadius:14,border:`1px solid ${agreed?C.borderLit:C.border}`,background:agreed?C.accentDim:C.bg2,transition:"all .2s" }}>
+        <div style={{ width:18,height:18,borderRadius:4,border:`2px solid ${agreed?C.accent:C.dim}`,background:agreed?C.accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .2s" }}>
+          {agreed&&<span style={{ color:"#000",fontSize:11,animation:"checkPop .2s ease" }}>✓</span>}
+        </div>
+        <p style={{ fontSize:10,color:agreed?C.text:C.muted,lineHeight:1.7 }}>I understand this experience may surface emotionally significant content and I have read the advisory above.</p>
+      </div>
+      <div style={{ marginTop:"auto" }}>
+        <PrimaryBtn label="Enter Memory Room" onClick={()=>{if(!agreed){setT("Please acknowledge the safety advisory first");}else{setEntered(true);setT("Entering VR Memory Room…");}}} done={entered} doneLabel="Entering…" disabled={!agreed}/>
+      </div>
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+// S30: VR Memory Room HUD
+function S30() {
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(22);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [exitOpen, setExitOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const [hotspot, setHotspot] = useState(null);
+  const [toast, setT] = useState(null);
+  const timer = useRef(null);
+  const togglePlay = ()=>{ if(playing){ clearInterval(timer.current); setPlaying(false); return; } setPlaying(true); timer.current=setInterval(()=>setProgress(p=>{ if(p>=100){ clearInterval(timer.current); setPlaying(false); return 100; } return p+.5; }),100); };
+  useEffect(()=>()=>clearInterval(timer.current),[]);
+  const hotspots = [
+    { id:"h1", x:"28%", y:"35%", label:"Cherry Blossom Path · Nov 14", wm:true },
+    { id:"h2", x:"62%", y:"50%", label:"Temple Bell · Dawn Recording", wm:false },
+    { id:"h3", x:"45%", y:"70%", label:"Dad waving hello · Consented", wm:false },
+  ];
+  return (
+    <div style={{ position:"absolute",inset:0,background:"linear-gradient(135deg,#040810 0%,#061020 50%,#040810 100%)",fontFamily:C.fontSans,overflow:"hidden" }}>
+      {/* Scene bg */}
+      <div style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:80,opacity:.06 }}>🏯</div>
+      <div style={{ position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(59,130,246,.04) 1px,transparent 1px)",backgroundSize:"32px 32px" }}/>
+      {/* Hotspot markers */}
+      {hotspots.map(h=><button key={h.id} className="btn" onClick={()=>{ setHotspot(hotspot===h.id?null:h.id); setT(h.label); }} style={{ position:"absolute",left:h.x,top:h.y,transform:"translate(-50%,-50%)",background:"none",border:"none",padding:0 }}>
+        <div style={{ width:22,height:22,borderRadius:"50%",background:`rgba(${h.wm?"255,92,40":"59,130,246"},.15)`,border:`1px solid rgba(${h.wm?"255,92,40":"59,130,246"},.5)`,display:"flex",alignItems:"center",justifyContent:"center",animation:"breathe 2s infinite",boxShadow:`0 0 12px rgba(${h.wm?"255,92,40":"59,130,246"},.3)` }}>
+          <div style={{ width:8,height:8,borderRadius:"50%",background:h.wm?C.accent:C.blue }}/>
+        </div>
+        {hotspot===h.id&&<div style={{ position:"absolute",top:"calc(100% + 8px)",left:"50%",transform:"translateX(-50%)",background:"rgba(5,5,5,.9)",border:`1px solid ${C.border}`,borderRadius:10,padding:"8px 12px",whiteSpace:"nowrap",backdropFilter:"blur(8px)",animation:"fadeUp .2s ease" }}>
+          <div style={{ fontSize:10,color:C.text }}>{h.label}</div>
+          {h.wm&&<div style={{ fontSize:9,color:C.accent,marginTop:2 }}>⭐ AI-enhanced region</div>}
+        </div>}
+      </button>)}
+      {/* TOP HUD */}
+      <div style={{ position:"absolute",top:32,left:0,right:0,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",zIndex:10 }}>
+        <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+          {Ico.vr}
+          <span style={{ fontSize:10,color:C.text,letterSpacing:"1px",textTransform:"uppercase" }}>Memory Room</span>
+        </div>
+        <div style={{ display:"flex",gap:8 }}>
+          <button className="btn" onClick={()=>setLegendOpen(!legendOpen)} style={{ padding:"6px 12px",borderRadius:999,border:`1px solid ${C.border}`,background:"rgba(5,5,5,.7)",backdropFilter:"blur(8px)",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Legend</button>
+          <button className="btn" onClick={()=>setInviteOpen(!inviteOpen)} style={{ padding:"6px 12px",borderRadius:999,border:`1px solid ${C.border}`,background:"rgba(5,5,5,.7)",backdropFilter:"blur(8px)",color:C.muted,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Co-presence</button>
+        </div>
+      </div>
+      {/* Legend dropdown */}
+      {legendOpen&&<div style={{ position:"absolute",top:70,right:20,zIndex:50,background:"rgba(5,5,5,.95)",border:`1px solid ${C.border}`,borderRadius:14,padding:14,animation:"fadeUp .2s ease",backdropFilter:"blur(16px)" }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Watermark Legend</div>
+        {[{col:C.accent,label:"AI-enhanced or repaired content"},{col:C.blue,label:"Original captured memory"},{col:C.green,label:"Consented participant"}].map(({col,label})=>
+          <div key={label} style={{ display:"flex",gap:8,alignItems:"center",marginBottom:8 }}>
+            <div style={{ width:10,height:10,borderRadius:"50%",background:col,flexShrink:0 }}/>
+            <span style={{ fontSize:10,color:C.muted }}>{label}</span>
+          </div>
+        )}
+      </div>}
+      {/* Co-presence panel */}
+      {inviteOpen&&<div style={{ position:"absolute",top:70,right:20,zIndex:50,background:"rgba(5,5,5,.95)",border:`1px solid ${C.border}`,borderRadius:14,padding:14,animation:"fadeUp .2s ease",backdropFilter:"blur(16px)",minWidth:180 }}>
+        <div style={{ fontSize:9,color:C.dim,letterSpacing:"1px",textTransform:"uppercase",marginBottom:10 }}>Invite to Co-visit</div>
+        <div style={{ padding:"8px 12px",borderRadius:10,background:C.bg2,border:`1px solid ${C.border}`,fontFamily:"monospace",fontSize:12,color:C.accent,letterSpacing:"2px",textAlign:"center",marginBottom:10 }}>TF-7X42</div>
+        <button className="btn" onClick={()=>{setT("Invite code copied ✓");setInviteOpen(false);}} style={{ width:"100%",padding:"8px",borderRadius:10,border:`1px solid ${C.borderLit}`,background:C.accentDim,color:C.accent,fontFamily:C.fontSans,fontSize:9,letterSpacing:".8px",textTransform:"uppercase" }}>Copy Code</button>
+      </div>}
+      {/* BOTTOM HUD */}
+      <div style={{ position:"absolute",bottom:32,left:20,right:20,zIndex:10 }}>
+        {/* Progress */}
+        <div style={{ height:3,borderRadius:999,background:"rgba(255,255,255,.1)",marginBottom:12,overflow:"hidden" }}>
+          <div style={{ height:"100%",borderRadius:999,background:C.accent,width:`${progress}%`,transition:"width .1s linear" }}/>
+        </div>
+        {/* Controls */}
+        <div style={{ display:"flex",gap:10,alignItems:"center" }}>
+          <button className="btn" onClick={togglePlay} style={{ width:44,height:44,borderRadius:"50%",border:`1px solid ${C.border}`,background:"rgba(5,5,5,.8)",backdropFilter:"blur(8px)",color:C.text,display:"flex",alignItems:"center",justifyContent:"center" }}>{playing?Ico.pause:Ico.play}</button>
+          <div style={{ flex:1,display:"flex",flexDirection:"column" }}>
+            <span style={{ fontSize:10,color:C.text,letterSpacing:".5px",marginBottom:2 }}>Kyoto Trip · 2023</span>
+            <span style={{ fontSize:9,color:C.dim }}>Beat {Math.ceil((progress/100)*12)} of 12 · {Math.floor(progress*.72)}:{String(Math.floor((progress*.72%1)*60)).padStart(2,"0")}</span>
+          </div>
+          <button className="btn" onClick={()=>setExitOpen(true)} style={{ padding:"10px 16px",borderRadius:999,border:"1px solid rgba(239,68,68,.4)",background:"rgba(239,68,68,.1)",backdropFilter:"blur(8px)",color:C.red,fontFamily:C.fontSans,fontSize:9,letterSpacing:"1px",textTransform:"uppercase" }}>Exit to Calm</button>
+        </div>
+      </div>
+      {/* Exit confirm */}
+      {exitOpen&&<div style={{ position:"absolute",inset:0,zIndex:100,background:"rgba(5,5,5,.9)",backdropFilter:"blur(16px)",display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeIn .2s ease" }}>
+        <div style={{ background:C.bg2,border:`1px solid ${C.border}`,borderRadius:20,padding:24,width:"80%",textAlign:"center" }}>
+          <div style={{ fontFamily:C.fontSerif,fontSize:22,color:C.text,marginBottom:10 }}>Exit Memory Room?</div>
+          <p style={{ fontSize:11,color:C.muted,lineHeight:1.7,marginBottom:20 }}>You'll return to the calm exit screen. Your progress is saved.</p>
+          <div style={{ display:"flex",gap:10 }}>
+            <button className="btn" onClick={()=>setExitOpen(false)} style={{ flex:1,padding:12,borderRadius:12,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>Stay</button>
+            <button className="btn" onClick={()=>{setExitOpen(false);setT("Exiting to calm space… take a breath.");}} style={{ flex:1,padding:12,borderRadius:12,border:"none",background:C.red,color:"#fff",fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>Exit</button>
+          </div>
+        </div>
+      </div>}
+      {toast&&<Toast msg={toast} onDone={()=>setT(null)}/>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCREEN MAP
+═══════════════════════════════════════════════════════ */
+const SCREEN_MAP = { 1:S1,2:S2,3:S3,4:S4,5:S5,6:S6,7:S7,8:S8,9:S9,10:S10,11:S11,12:S12,13:S13,14:S14,15:S15,16:S16,17:S17,18:S18,19:S19,20:S20,21:S21,22:S22,23:S23,24:S24,25:S25,26:S26,27:S27,28:S28,29:S29,30:S30 };
+
+/* ═══════════════════════════════════════════════════════
+   ROOT COMPONENT
+═══════════════════════════════════════════════════════ */
+function TimeFoldFull() {
+  const [current, setCurrent] = useState(1);
+  const [navOpen, setNavOpen] = useState(false);
+  const ActiveScreen = SCREEN_MAP[current];
+  const sec = sectionForId(current);
+  const accentColor = sec?.color || C.accent;
+  const allIds = ALL_SCREENS.map(s=>s.id);
+  const currentIdx = allIds.indexOf(current);
+  const prev = currentIdx > 0 ? allIds[currentIdx-1] : null;
+  const next = currentIdx < allIds.length-1 ? allIds[currentIdx+1] : null;
+
+  return (
+    <>
+      <style>{G}</style>
+      <div style={{ minHeight:"100vh",background:"#050507",fontFamily:C.fontSans,display:"flex",flexDirection:"column" }}>
+        {/* Header */}
+        <header style={{ height:72,borderBottom:`1px solid ${C.border}`,background:"rgba(5,5,7,.95)",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 32px",position:"sticky",top:0,zIndex:400,flexShrink:0 }}>
+          <div style={{ display:"flex",gap:14,alignItems:"center" }}>
+            <div style={{ width:10,height:10,borderRadius:"50%",background:accentColor,boxShadow:`0 0 14px ${accentColor}`,animation:"pulse 2.8s infinite",transition:"background .3s,box-shadow .3s",flexShrink:0 }}/>
+            <span style={{ fontFamily:C.fontSerif,fontSize:20,color:C.text,letterSpacing:".3px" }}>TimeFold</span>
+            <span style={{ fontSize:10,color:C.dim,letterSpacing:"1.4px",textTransform:"uppercase" }}>// Full System</span>
+          </div>
+          {/* Screen info */}
+          <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:10,color:C.muted }}>{sec?.id} · {sec?.label}</div>
+              <div style={{ fontSize:9,color:C.dim }}>Screen {current} of 30 · {ALL_SCREENS.find(s=>s.id===current)?.label}</div>
+            </div>
+            <button className="btn" onClick={()=>setNavOpen(!navOpen)} style={{ padding:"8px 16px",borderRadius:10,border:`1px solid ${navOpen?accentColor:C.border}`,background:navOpen?`rgba(${hexToRgb(accentColor)},.1)`:"transparent",color:navOpen?accentColor:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>
+              {navOpen?"Close":"All Screens"}
+            </button>
+          </div>
+        </header>
+
+        {/* Nav Panel */}
+        {navOpen&&<div style={{ background:"rgba(5,5,7,.98)",borderBottom:`1px solid ${C.border}`,padding:"24px 32px",zIndex:300,backdropFilter:"blur(16px)" }}>
+          <div style={{ display:"flex",gap:40,overflowX:"auto" }}>
+            {SECTIONS.map(sec=><div key={sec.id} style={{ flexShrink:0 }}>
+              <div style={{ fontSize:9,color:sec.color,letterSpacing:"1.2px",textTransform:"uppercase",marginBottom:10,borderLeft:`2px solid ${sec.color}`,paddingLeft:10 }}>{sec.id} · {sec.label}</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
+                {sec.screens.map(sc=><button key={sc.id} className="btn" onClick={()=>{setCurrent(sc.id);setNavOpen(false);}} style={{ textAlign:"left",padding:"7px 12px",borderRadius:8,border:`1px solid ${current===sc.id?sec.color:C.border}`,background:current===sc.id?`rgba(${hexToRgb(sec.color)},.12)`:"transparent",color:current===sc.id?sec.color:C.muted,fontFamily:C.fontSans,fontSize:10,letterSpacing:".3px",whiteSpace:"nowrap",transition:"all .15s" }}>
+                  <span style={{ color:C.dim,marginRight:6 }}>{sc.id}.</span>{sc.label}
+                </button>)}
+              </div>
+            </div>)}
+          </div>
+        </div>}
+
+        {/* Main */}
+        <main style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"48px 32px",gap:48 }}>
+          {/* Prev nav */}
+          <div style={{ display:"flex",flexDirection:"column",gap:12,alignItems:"center",opacity:prev?1:.2,transition:"opacity .2s" }}>
+            <button className="btn" onClick={()=>prev&&setCurrent(prev)} disabled={!prev} style={{ width:44,height:44,borderRadius:"50%",border:`1px solid ${C.border}`,background:"transparent",color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>←</button>
+            {prev&&<span style={{ fontSize:9,color:C.dim,letterSpacing:".5px",textTransform:"uppercase",writingMode:"vertical-rl",textOrientation:"mixed",transform:"rotate(180deg)" }}>{ALL_SCREENS.find(s=>s.id===prev)?.label}</span>}
+          </div>
+
+          {/* Phone */}
+          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:16 }}>
+            {/* Section label */}
+            <div style={{ display:"flex",gap:12,alignItems:"center" }}>
+              <div style={{ borderLeft:`2px solid ${accentColor}`,paddingLeft:14,fontFamily:C.fontSans,fontSize:10,color:C.muted,letterSpacing:"1px",textTransform:"uppercase",transition:"border-color .3s" }}>
+                {sec?.id} / {sec?.label} · {ALL_SCREENS.find(s=>s.id===current)?.label}
+              </div>
+            </div>
+            <Phone><ActiveScreen/></Phone>
+            {/* Progress bar */}
+            <div style={{ width:340,height:3,borderRadius:999,background:C.bg3,overflow:"hidden" }}>
+              <div style={{ height:"100%",borderRadius:999,background:accentColor,width:`${(currentIdx/29)*100}%`,transition:"width .3s ease,background .3s" }}/>
+            </div>
+            <div style={{ fontSize:9,color:C.dim,letterSpacing:".8px" }}>Screen {current} / 30 · {Math.round((currentIdx/29)*100)}% complete</div>
+          </div>
+
+          {/* Next nav */}
+          <div style={{ display:"flex",flexDirection:"column",gap:12,alignItems:"center",opacity:next?1:.2,transition:"opacity .2s" }}>
+            <button className="btn" onClick={()=>next&&setCurrent(next)} disabled={!next} style={{ width:44,height:44,borderRadius:"50%",border:`1px solid ${C.border}`,background:"transparent",color:C.muted,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>→</button>
+            {next&&<span style={{ fontSize:9,color:C.dim,letterSpacing:".5px",textTransform:"uppercase",writingMode:"vertical-rl",textOrientation:"mixed" }}>{ALL_SCREENS.find(s=>s.id===next)?.label}</span>}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<TimeFoldFull />);
   </script>
